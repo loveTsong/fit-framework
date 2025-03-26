@@ -90,9 +90,15 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
      * @return 新的发射器
      */
     public static <I> FlowEmitter<I> from(Emitter<I, FlowSession> emitter) {
-        FlowEmitter<I> cachedEmitter = new FlowEmitter<>();
-        EmitterListener<I, FlowSession> emitterListener = (data, token) -> {
-            cachedEmitter.emit(data, token);
+        FlowEmitter<I> cachedEmitter = new AutoCompleteEmitter<>();
+        EmitterListener<I, FlowSession> emitterListener = (data, session) -> {
+            System.out.println(String.format("[%s][FlowEmitter.from] data=%s, session=%s, windowId=%s, isComplete=%s",
+                    Thread.currentThread().getId(),
+                    data,
+                    session.getId(),
+                    session.getWindow().id(),
+                    session.getWindow().isComplete()));
+            cachedEmitter.emit(data, session);
         };
         emitter.register(emitterListener);
         return cachedEmitter;
@@ -104,6 +110,12 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
 
         if (this.isStart) {
             this.fire();
+        }
+    }
+
+    public void unregister(EmitterListener<D, FlowSession> listener) {
+        if (listener != null) {
+            this.listeners.remove(listener);
         }
     }
 
@@ -181,6 +193,41 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
         }
         if (this.isStart && this.isComplete) {
             this.flowSession.getWindow().complete();
+        }
+    }
+
+    /**
+     * 基于发射器自适应完成的发射器实现。
+     *
+     * @param <D> 发射器处理的数据类型。
+     */
+    public static class AutoCompleteEmitter<D> extends FlowEmitter<D> {
+        @Override
+        public synchronized void start(FlowSession session) {
+            if (session != null) {
+                session.begin();
+            }
+            this.setFlowSession(session);
+            this.setStarted();
+            this.fire();
+        }
+
+        @Override
+        public synchronized void emit(D data, FlowSession session) {
+            // 这里需要基于目标父window判断是否全部window done. 当前这个还不行，处理不了子流中存在拆分window的场景
+            // 另外基于session.isCompleted()判断时，这里如何防止并发问题，比如倒数第二条数据进来，同时整个完成时，会提前完成，可能导致少一条数据。
+            // 这里也不能通过数量判断，因为前面流如果有拆分window的情况，则数量无法判断。
+            if (session.getWindow().isComplete()) {
+            // if (session.isCompleted() && session.getWindow().tokenCount() == this.flowSession.getWindow().tokenCount() + 1) {
+                System.out.println(String.format("[%s][UnfixedEmitter.emit.session.isCompleted] data=%s, session=%s, windowId=%s, isComplete=%s",
+                        Thread.currentThread().getId(),
+                        data,
+                        session.getId(),
+                        session.getWindow().id(),
+                        session.getWindow().isComplete()));
+                this.complete();
+            }
+            this.listeners.forEach(listener -> listener.handle(data, this.flowSession));
         }
     }
 }

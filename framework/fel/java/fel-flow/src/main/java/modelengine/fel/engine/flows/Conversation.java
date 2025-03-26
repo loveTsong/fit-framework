@@ -14,6 +14,7 @@ import modelengine.fel.engine.activities.FlowCallBack;
 import modelengine.fel.engine.operators.models.ChatChunk;
 import modelengine.fel.engine.operators.models.StreamingConsumer;
 import modelengine.fel.engine.operators.sources.Source;
+import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fel.engine.util.StateKey;
 import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
@@ -51,7 +52,7 @@ public class Conversation<D, R> {
     public Conversation(AiProcessFlow<D, R> flow, FlowSession session) {
         this.flow = Validation.notNull(flow, "Flow cannot be null.");
         this.session =
-                (session == null) ? this.setConverseListener(new FlowSession()) : this.setSubConverseListener(session);
+                (session == null) ? this.setConverseListener(new FlowSession(true)) : this.setSubConverseListener(session);
         this.session.begin();
         this.callBackBuilder = FlowCallBack.builder();
     }
@@ -67,6 +68,11 @@ public class Conversation<D, R> {
     public final ConverseLatch<R> offer(D... data) {
         ConverseLatch<R> latch = setListener(this.flow);
         FlowSession newSession = new FlowSession(this.session);
+        newSession.getWindow().setFrom(null);
+        System.out.println(String.format("[%s][Conversation.offer] session=%s, windowId=%s, newWindowId=%s",
+                Thread.currentThread().getId(), this.session.getId(), this.session.getWindow().id(),
+                newSession.getWindow().id()
+        ));
         this.flow.start().offer(data, newSession);
         newSession.getWindow().complete();
         return latch;
@@ -202,6 +208,7 @@ public class Conversation<D, R> {
 
     private ConverseLatch<R> setListener(AiProcessFlow<D, R> currFlow) {
         ConverseLatch<R> latch = new ConverseLatch<>();
+        System.out.println(String.format("[Conversation][setListener] latchId=%s", latch.getId()));
         Predictable<R> predictable = new Predictable<>(currFlow, this.callBackBuilder.build(), latch);
         ConverseListener<R> listener = this.converseListener.getAndSet(predictable);
         if (listener != null && !listener.isCompleted()) {

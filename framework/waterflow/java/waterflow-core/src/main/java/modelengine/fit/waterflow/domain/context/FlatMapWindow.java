@@ -70,6 +70,11 @@ public class FlatMapWindow extends Window {
     }
 
     @Override
+    public boolean isComplete() {
+        return this.from.isComplete();
+    }
+
+    @Override
     public Integer tokenCount() {
         return this.from.tokenCount();
     }
@@ -89,6 +94,10 @@ public class FlatMapWindow extends Window {
      */
     @Override
     public void complete() {
+        System.out.println(String.format("[%s][FlatMapWindow.complete] windowId=%s, isComplete=%s",
+                Thread.currentThread().getId(),
+                this.id(),
+                this.isComplete()));
         if (this.isComplete()) {
             return;
         }

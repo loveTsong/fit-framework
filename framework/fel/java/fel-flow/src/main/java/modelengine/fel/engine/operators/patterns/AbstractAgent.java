@@ -76,23 +76,28 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     protected abstract Prompt doToolCall(List<ToolCall> toolCalls, StateContext ctx);
 
     @Override
-    protected AiProcessFlow<Prompt, ChatMessage> buildFlow() {
-        return AiFlows.<Prompt>create()
+    public AiProcessFlow<Prompt, ChatMessage> buildFlow() {
+        AiProcessFlow<Prompt, ChatMessage> agent = AiFlows.<Prompt>create()
                 .just((input, ctx) -> ctx.setState(this.memoryId, ChatMessages.from(input)))
                 .generate(this.model)
                 .id(CHECK_POINT)
-                .conditions()
-                .matchTo(ChatMessage::isToolCall,
-                        node -> node.reduce(() -> new AiMessage(StringUtils.EMPTY, new ArrayList<>()), (acc, input) -> {
-                                    acc.toolCalls().addAll(input.toolCalls());
-                                    return acc;
-                                })
-                                .just(this::handleTool)
-                                .id("call tool")
-                                .map((ignored, ctx) -> ctx.getState(this.memoryId))
-                                .to(CHECK_POINT))
-                .others(node -> node)
+                // .conditions()
+                // .matchTo(ChatMessage::isToolCall,
+                //         node -> node.reduce(() -> new AiMessage(StringUtils.EMPTY, new ArrayList<>()), (acc, input) -> {
+                //                     acc.toolCalls().addAll(input.toolCalls());
+                //                     return acc;
+                //                 })
+                //                 .just(this::handleTool)
+                //                 .id("call tool")
+                //                 .map((ignored, ctx) -> ctx.getState(this.memoryId))
+                //                 .to(CHECK_POINT))
+                // .others(node -> node)
+                .just(input -> System.out.println(String.format("[%s][AbstractAgent] %s",
+                        Thread.currentThread().getId(),
+                        input.text())))
                 .close();
+        System.out.println(String.format("[buildFlow] id=%s, streamId=%s", agent.getId(), agent.start().getStreamId()));
+        return agent;
     }
 
     private void handleTool(ChatMessage message, StateContext ctx) {

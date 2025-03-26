@@ -108,6 +108,12 @@ public class AiState<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
         }
     }
 
+    public void unregister(EmitterListener<O, FlowSession> listener) {
+        if (listener != null) {
+            this.state.unregister(listener);
+        }
+    }
+
     @Override
     public void emit(O data, FlowSession session) {
         this.state.emit(data, new FlowSession(session));

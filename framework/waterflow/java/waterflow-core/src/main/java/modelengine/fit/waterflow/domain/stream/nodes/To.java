@@ -487,6 +487,20 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                 return;
             }
             List<FlowContext<O>> afterList = this.getProcessMode().process(this, preList);
+            afterList.forEach(ctx -> {
+                System.out.println(String.format("[%s][To][onProcess.after] contextId=%s->%s, index=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, streamId=%s, tokens=%s, isComplete=%s.",
+                        Thread.currentThread().getId(),
+                        ctx.getPrevious(),
+                        ctx.getId(),
+                        ctx.getIndex(),
+                        ctx.getSession().getId(), afterList.size(),
+                        ctx.getWindow().id(),
+                        ctx.getWindow().tokenCount(),
+                        this.getStreamId(),
+                        ctx.getWindow().debugTokens(),
+                        ctx.getWindow().isComplete()
+                        ));
+            });
             this.afterProcess(preList, afterList);
             if (CollectionUtils.isNotEmpty(afterList)) {
                 // 查找一个transaction里的所有数据的都完成了，运行callback给stream外反馈数据
@@ -495,6 +509,12 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
             }
             // 处理好数据后对外送数据，驱动其他flow响应
             afterList.forEach(context -> this.emit(context.getData(), context.getSession()));
+            // keep order
+            preList.forEach(context -> {
+                if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
+                    this.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
+                }
+            });
         } catch (Exception ex) {
             LOG.error("Node process exception stream-id: {}, node-id: {}, position-id: {}, traceId: {}. caused by: {}",
                     this.streamId, this.id, preList.get(0).getPosition(), preList.get(0).getTraceId(),
@@ -555,17 +575,42 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
     private void feedback(List<FlowContext<O>> contexts) {
         this.callback.process(new ToCallback<>(contexts));
 
+        contexts.forEach(context -> {
+            FlowDebug.log(String.format("[%s][feedback] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
+                            + ", tokens=%s",
+                    Thread.currentThread().getId(),
+                    this.getId()  + "|" +  this.getNodeType(),
+                    this.getStreamId(),
+                    context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
+                    context.getSession().getId(), context.getSession().getWindow().id(),
+                    context.getData().toString(),
+                    context.getSession().getWindow().debugTokens()
+            ));
+        });
+
         if (this.sessionCompleteCallback != null) {
             contexts.forEach(context -> {
-                FlowDebug.log(String.format("[feedback] nodeId=%s isComplete=%s, sessionId=%s, windowId=%s, data=%s"
+                FlowDebug.log(String.format("[%s][feedback.sessionCompleteCallback] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
                                 + ", tokens=%s",
-                        this.getId() + this.getNodeType(),
-                        context.getSession().getWindow().isComplete(),
+                        Thread.currentThread().getId(),
+                        this.getId()  + "|" + this.getNodeType(),
+                        this.getStreamId(),
+                        context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
                         context.getSession().getId(), context.getSession().getWindow().id(),
                         context.getData().toString(),
                         context.getSession().getWindow().debugTokens()
                 ));
                 if (context.getSession().getWindow().isComplete()) {
+                    FlowDebug.log(String.format("[%s][feedback.sessionCompleteCallback.complete] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
+                                    + ", tokens=%s",
+                            Thread.currentThread().getId(),
+                            this.getId()  + "|" + this.getNodeType(),
+                            this.getStreamId(),
+                            context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
+                            context.getSession().getId(), context.getSession().getWindow().id(),
+                            context.getData().toString(),
+                            context.getSession().getWindow().debugTokens()
+                    ));
                     this.sessionCompleteCallback.process(context.getSession());
                 }
             });
@@ -698,13 +743,31 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
         this.listeners.add(handler);
     }
 
+    public void unregister(EmitterListener<O, FlowSession> listener) {
+        if (listener != null) {
+            this.listeners.remove(listener);
+        }
+    }
+
     @Override
-    public void emit(O data, FlowSession trans) {
-        this.listeners.forEach(listener -> listener.handle(data, trans));
+    public void emit(O data, FlowSession session) {
+        this.listeners.forEach(listener -> {
+            // 这里应该是在思考是不是应该在handle的地方统一汇聚session
+            // FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.streamId, listener, session);
+            System.out.println(String.format("[%s][To][emit] data=%s, session=%s, windowId=%s, isComplete=%s, streamId=%s, tokens=%s",
+                    Thread.currentThread().getId(), data, session.getId(), session.getWindow().id(),
+                    session.getWindow().isComplete(),
+                    this.getStreamId(), session.getWindow().debugTokens()
+            ));
+            listener.handle(data, session);
+        });
+        // if (session.getWindow().isComplete()) {
+        //     session.getWindow().tryFinish();
+        // }
     }
 
     private FlowSession getNextSession(FlowSession session) {
-        return FlowSessionRepo.getNextSession(session);
+        return FlowSessionRepo.getNextToSession(this.streamId, session);
     }
 
     /**
@@ -737,6 +800,18 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                     window.setCompleteHook(to, context);
                     // get the token,and set to begin consume
                     WindowToken peekedToken = window.peekAndConsume();
+                    System.out.println(String.format("[%s][To][MAPPING.process] contextId=%s->%s, index=%s， data=%s, peekedToken=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, isComplete=%s, tokens=%s, streamId=%s.",
+                            Thread.currentThread().getId(),
+                            context.getPrevious(), context.getId(), context.getIndex(),
+                            context.getData(),
+                            peekedToken == null ? "null" : peekedToken.hashCode(),
+                            context.getSession().getId(), contexts.size(),
+                            context.getWindow().id(),
+                            context.getWindow().tokenCount(),
+                            context.getWindow().isComplete(),
+                            context.getWindow().debugTokens(),
+                            to.getStreamId()
+                    ));
                     // process data
                     R1 data = to.map.process(context);
                     // context.getSession() could be changed by processor
@@ -764,9 +839,12 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         peekedToken.finishConsume();//consume the peeked
                     }
                     //keep order
-                    if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
-                        to.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
-                    }
+                    // if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
+                    //     to.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
+                    // }
+                    // if (context.getWindow().isDone()) {
+                    //     to.processingSessions.remove(context.getSession().getId());
+                    // }
 
                     //if previous stream complete, complete this stream
                     if (context.getSession().getWindow().isDone()) {
