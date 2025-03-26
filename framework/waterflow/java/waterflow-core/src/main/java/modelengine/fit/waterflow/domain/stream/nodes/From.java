@@ -178,7 +178,7 @@ public class From<I> extends IdGenerator implements Publisher<I> {
         Validation.notNull(processor, "Flat map processor can not be null.");
         AtomicReference<Node<I, O>> processRef = new AtomicReference<>();
         Operators.Map<FlowContext<I>, O> wrapper = input -> {
-            FlatMapSourceWindow fWindow = FlatMapSourceWindow.from(input.getWindow(), this.repo);
+            FlatMapSourceWindow fWindow = FlatMapSourceWindow.from(this.streamId, input.getWindow(), this.repo);
 
             final FlowSession session = new FlowSession(input.getSession());
             FlatMapWindow flatMapWindow = new FlatMapWindow(fWindow);

@@ -64,13 +64,17 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
      */
     public Pattern<I, O> sync() {
         return new SimplePattern<>(data -> {
+            System.out.println("sync");
             FlowSession require = AiFlowSession.require();
             FlowSession session = new FlowSession();
             Window window = session.begin();
             session.copySessionState(require);
             ConverseLatch<O> conversation = this.getFlow().converse(session).offer(data);
             window.complete();
-            return conversation.await();
+            System.out.println(String.format("sync offer end. latch=%s", conversation.getId()));
+            O await = conversation.await();
+            System.out.println("sync offer wait end");
+            return await;
         });
     }
 
