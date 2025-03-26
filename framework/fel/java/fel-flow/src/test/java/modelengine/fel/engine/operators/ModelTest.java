@@ -12,13 +12,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import modelengine.fel.core.chat.ChatMessage;
 import modelengine.fel.core.chat.ChatOption;
+import modelengine.fel.core.chat.Prompt;
 import modelengine.fel.core.chat.support.AiMessage;
+import modelengine.fel.core.chat.support.ChatMessages;
+import modelengine.fel.core.tool.ToolCall;
 import modelengine.fel.core.util.Tip;
 import modelengine.fel.engine.flows.AiFlows;
 import modelengine.fel.engine.flows.AiProcessFlow;
 import modelengine.fel.engine.flows.Conversation;
 import modelengine.fel.engine.operators.models.ChatFlowModel;
+import modelengine.fel.engine.operators.patterns.AbstractAgent;
 import modelengine.fel.engine.operators.prompts.Prompts;
+import modelengine.fit.waterflow.domain.context.StateContext;
 import modelengine.fit.waterflow.domain.utils.SleepUtil;
 import modelengine.fitframework.flowable.Choir;
 
@@ -40,9 +45,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ModelTest {
     private final ChatFlowModel model = new ChatFlowModel((prompt, chatOption) -> Choir.create(emitter -> {
         if (chatOption.stream()) {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 10; i++) {
                 emitter.emit(new AiMessage(String.valueOf(i)));
-                SleepUtil.sleep(10);
+                SleepUtil.sleep(1);
             }
         } else {
             emitter.emit(new AiMessage(String.valueOf(0)));
@@ -166,6 +171,48 @@ public class ModelTest {
 
             assertThatThrownBy(() -> exceptionConverse.offer(Tip.fromArray("test streaming exception"))
                     .await()).isInstanceOf(IllegalStateException.class).message().isEqualTo(expectedMsg);
+        }
+
+        @Test
+        void testxx() {
+            TestAgent testAgent = new TestAgent(model);
+
+            // AiProcessFlow<Prompt, ChatMessage> agentFlow = testAgent.buildFlow();
+            // ChatMessage await = agentFlow.converse().offer(new ChatMessages()).await();
+            // System.out.println("xxxxxxxxxx-agentFlow end-xxxxxx:" + await.text());
+
+            AiProcessFlow<Tip, String> agent = AiFlows.<Tip>create()
+                    .prompt(Prompts.human("answer: {{0}}"))
+                    .generate(model)
+                    .reduce(() -> "", (acc, input) -> acc + "-" + input.text())
+                    .close();
+            AiProcessFlow<Tip, String> mainFlow = AiFlows.<Tip>create()
+                    .prompt(Prompts.human("answer: {{0}}"))
+                    .delegate(testAgent)
+                    .just(chunk -> System.out.println(String.format("[%s][just] %s", Thread.currentThread().getId(), chunk.text())))
+                    .reduce(() -> "", (acc, input) -> {
+                        System.out.println(String.format("[%s][reduce] input=%s, acc=%s", Thread.currentThread().getId(), input.text(), acc));
+                        return acc + "-" + input.text();}
+                    )
+                    .close();
+            System.out.println(String.format("[testxx] mainFlowId=%s, streamId=%s", mainFlow.getId(), mainFlow.start().getStreamId()));
+
+            for (int i = 0; i < 2; ++i) {
+                String testStreamingModel = mainFlow.converse().offer(Tip.fromArray("test streaming model")).await();
+                System.out.println(i + " xxxxxxxxxx-end-xxxxxx:" + testStreamingModel);
+                SleepUtil.sleep(1000);
+            }
+        }
+
+        public class TestAgent extends AbstractAgent {
+            protected TestAgent(ChatFlowModel flowModel) {
+                super(flowModel);
+            }
+
+            @Override
+            protected Prompt doToolCall(List<ToolCall> toolCalls, StateContext ctx) {
+                return null;
+            }
         }
     }
 }

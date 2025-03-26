@@ -422,9 +422,11 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
         Validation.notNull(pattern, "Pattern operator cannot be null.");
         FlowPattern<O, R> flowPattern = this.castFlowPattern(pattern);
         Processor<O, R> orProcessor = this.publisher().flatMap(input -> {
-            FlowEmitter<R> cachedEmitter = FlowEmitter.from(flowPattern);
+            FlowEmitter<R> bind = flowPattern.bind(input);
+            // FlowEmitter<R> cachedEmitter = FlowEmitter.from(flowPattern);
             AiFlowSession.applyPattern(flowPattern, input.getData(), input.getSession());
-            return Flows.source(cachedEmitter);
+            System.out.println(String.format("[flows][source.before] streamId=%s", this.publisher().getStreamId()));
+            return Flows.source(bind);
         }, null);
         this.displayPatternProcessor(pattern, orProcessor);
         return new AiState<>(new State<>(orProcessor, this.flow().origin()), this.flow());
@@ -479,6 +481,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <R> AiState<R, D, O, RF, F> delegate(AiProcessFlow<O, R> aiFlow) {
         Validation.notNull(aiFlow, "Flow cannot be null.");
         Processor<O, R> processor = this.publisher().map(input -> {
+            System.out.println("delegate aiFlow");
             aiFlow.converse(input.getSession()).offer(input.getData());
             return (R) null;
         }, null).displayAs("delegate to flow", aiFlow.origin(), aiFlow.origin().start().getId());
@@ -560,6 +563,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <M extends ChatMessage> AiState<ChatMessage, D, O, RF, F> generate(FlowModel<O, M> model) {
         Validation.notNull(model, "Streaming Model operator cannot be null.");
         Processor<O, ChatMessage> processor = this.publisher().flatMap(input -> {
+            System.out.println("generate");
             return Flows.source(AiFlowSession.applyPattern(model, input.getData(), input.getSession()));
         }, null).displayAs("generate");
         return new AiState<>(new State<>(processor, this.flow().origin()), this.flow());

@@ -40,7 +40,6 @@ import modelengine.fitframework.resource.web.Media;
 import modelengine.fitframework.util.CollectionUtils;
 import modelengine.fitframework.util.StringUtils;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -98,7 +97,6 @@ public class PatternTest {
     }
 
     @Test
-    @Disabled("暂不支持")
     @DisplayName("测试 Retriever")
     void shouldOkWhenAiFlowWithRetriever() {
         Memory memory = getMockMemory();

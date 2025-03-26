@@ -117,10 +117,27 @@ public class FlowSession extends IdGenerator implements StateContext {
     public FlowSession(FlowSession session) {
         this(session.getId(), session.preserved);
         this.copyState(session);
-        this.keyBy = Optional.ofNullable(session).map(FlowSession::keyBy).orElse(null);
+        this.keyBy = session.keyBy;
         this.begin();
         this.window.setFrom(session.getWindow());
         session.getWindow().addTo(this.window);
+    }
+
+    public static FlowSession from(FlowSession session, Window window) {
+        FlowSession newSession = new FlowSession(session.getId(), session.preserved);
+        newSession.copyState(session);
+        newSession.keyBy = session.keyBy;
+        newSession.setWindow(window);
+        return newSession;
+    }
+
+    public static FlowSession newRootSession(FlowSession session, boolean preserved) {
+        FlowSession newSession = new FlowSession(preserved);
+        newSession.copyState(session);
+        newSession.keyBy = session.keyBy;
+        newSession.begin();
+        session.getWindow().addTo(newSession.window);
+        return newSession;
     }
 
     /**
@@ -158,6 +175,15 @@ public class FlowSession extends IdGenerator implements StateContext {
         if (this.window.getSession() != this) {
             this.window.setSession(this);
         }
+    }
+
+    /**
+     * 获取当前实例的数据是否全部处理完成。
+     *
+     * @return 表示前实例的数据是否全部处理完成的 {@code boolean}。
+     */
+    public boolean isCompleted() {
+        return this.window.getRootWindow().isAllDone();
     }
 
     /**

@@ -147,6 +147,27 @@ public class Window implements Completable {
     }
 
     /**
+     * 获取顶层窗口。
+     *
+     * @return 表示顶层窗口的 {@link Window}。
+     */
+    public Window getRootWindow() {
+        if (this.from == null) {
+            return this;
+        }
+        return this.from.getRootWindow();
+    }
+
+    /**
+     * 获取该窗口以及后续所有窗口是否全部结束。
+     *
+     * @return 表示该窗口以及后续所有窗口是否全部结束的 {@code boolean}。
+     */
+    public boolean isAllDone() {
+        return this.isDone() && this.tos.stream().allMatch(Window::isAllDone);
+    }
+
+    /**
      * 创建window token
      *
      * @return window token
@@ -269,6 +290,11 @@ public class Window implements Completable {
     public <T, R> void setCompleteHook(To<T, R> to, FlowContext context) {
         this.node = to;
         this.completeContext = new CompleteContext(context, to.getId());
+    }
+
+    public <T, R> void setCompleteHook(To<T, R> to) {
+        // this.node = to;
+        // this.completeContext = new CompleteContext(context, to.getId());
     }
 
     /**

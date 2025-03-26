@@ -39,20 +39,40 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
 
     @Override
     public void register(EmitterListener<O, FlowSession> handler) {
+        System.out.println("[FlowPattern.register] " + this.getFlow().start().getStreamId());
         if (handler != null) {
             this.getFlow().register(handler);
         }
     }
 
     @Override
+    public void unregister(EmitterListener<O, FlowSession> listener) {
+        if (listener != null) {
+            this.getFlow().unregister(listener);
+        }
+    }
+
+
+
+    @Override
     public void emit(O data, FlowSession session) {
-        FlowSession flowSession = new FlowSession(session);
-        this.getFlow().emit(data, flowSession);
+        // FlowSession flowSession = new FlowSession(session);
+        System.out.println(String.format("[%s][FlowPattern.emit] data=%s, session=%s, windowId=%s", Thread.currentThread().getId(), data, session.getId(), session.getWindow().id()));
+        this.getFlow().emit(data, session);
     }
 
     @Override
     public O invoke(I data) {
-        this.getFlow().converse(AiFlowSession.require()).offer(data);
+        // 这里理论上应该是监听主流session对应window的完成事件，完成子流的window
+        FlowSession mainSession = AiFlowSession.require();
+        FlowSession flowSession = FlowSession.newRootSession(mainSession, true);
+        flowSession.setInnerState("parentSessionId", mainSession.getId());
+        System.out.println(String.format("[%s][FlowPattern.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
+                Thread.currentThread().getId(), data, AiFlowSession.require().getId(), AiFlowSession.require().getWindow().id(),
+                flowSession.getId(),
+                flowSession.getWindow().id()
+        ));
+        this.getFlow().converse(flowSession).offer(data);
         return null;
     }
 
@@ -64,13 +84,17 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
      */
     public Pattern<I, O> sync() {
         return new SimplePattern<>(data -> {
+            System.out.println("sync");
             FlowSession require = AiFlowSession.require();
             FlowSession session = new FlowSession();
             Window window = session.begin();
             session.copySessionState(require);
             ConverseLatch<O> conversation = this.getFlow().converse(session).offer(data);
             window.complete();
-            return conversation.await();
+            System.out.println(String.format("sync offer end. latch=%s", conversation.getId()));
+            O await = conversation.await();
+            System.out.println("sync offer wait end");
+            return await;
         });
     }
 

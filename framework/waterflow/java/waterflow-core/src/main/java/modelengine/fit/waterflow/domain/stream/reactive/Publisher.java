@@ -9,6 +9,7 @@ package modelengine.fit.waterflow.domain.stream.reactive;
 import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.context.repo.flowcontext.FlowContextRepo;
+import modelengine.fit.waterflow.domain.context.repo.flowsession.FlowSessionRepo;
 import modelengine.fit.waterflow.domain.emitters.EmitterListener;
 import modelengine.fit.waterflow.domain.enums.ParallelMode;
 import modelengine.fit.waterflow.domain.stream.operators.Operators;
@@ -37,7 +38,11 @@ public interface Publisher<I> extends StreamIdentity, EmitterListener<I, FlowSes
 
     @Override
     default void handle(I data, FlowSession flowSession) {
-        this.offer(data, new FlowSession(flowSession));
+        FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.getStreamId(), this, flowSession);
+        this.offer(data, nextSession);
+        // if (flowSession.getWindow().isComplete()) {
+        //     flowSession.getWindow().tryFinish();
+        // }
     }
 
     /**

@@ -81,7 +81,10 @@ public interface SyncTipper<I> extends Pattern<I, Tip> {
         Validation.notNull(flow, "Flow cannot be null.");
         return new FlowSupportable<>(AiFlows.<I>create()
                 .delegate(flow)
-                .map(input -> Tip.from(key, input))
+                .map(input -> {
+                    System.out.println("value.map");
+                    return Tip.from(key, input);
+                })
                 .close()).sync();
     }
 
