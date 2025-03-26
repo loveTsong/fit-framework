@@ -182,6 +182,7 @@ public class Conversation<D, R> {
 
     private ConverseLatch<R> setListener(AiProcessFlow<D, R> currFlow) {
         ConverseLatch<R> latch = new ConverseLatch<>();
+        System.out.println(String.format("[Conversation][setListener] latchId=%s", latch.getId()));
         Predictable<R> predictable = new Predictable<>(currFlow, this.callBackBuilder.build(), latch);
         ConverseListener<R> listener = this.converseListener.getAndSet(predictable);
         if (listener != null && !listener.isCompleted()) {

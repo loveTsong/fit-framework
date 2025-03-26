@@ -487,6 +487,12 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                 return;
             }
             List<FlowContext<O>> afterList = this.getProcessMode().process(this, preList);
+            afterList.forEach(ctx -> {
+                System.out.println(String.format("[To][after] contextId=%s->%s, sessionId=%s, contextSize=%s.",
+                        ctx.getPrevious(),
+                        ctx.getId(),
+                        ctx.getSession().getId(), afterList.size()));
+            });
             this.afterProcess(preList, afterList);
             if (CollectionUtils.isNotEmpty(afterList)) {
                 // 查找一个transaction里的所有数据的都完成了，运行callback给stream外反馈数据
@@ -699,12 +705,18 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
     }
 
     @Override
-    public void emit(O data, FlowSession trans) {
-        this.listeners.forEach(listener -> listener.handle(data, trans));
+    public void emit(O data, FlowSession session) {
+        this.listeners.forEach(listener -> {
+            // FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.streamId, listener, session);
+            listener.handle(data, session);
+        });
+        if (session.getWindow().isComplete()) {
+            session.getWindow().tryFinish();
+        }
     }
 
     private FlowSession getNextSession(FlowSession session) {
-        return FlowSessionRepo.getNextSession(session);
+        return FlowSessionRepo.getNextToSession(this.streamId, session);
     }
 
     /**
@@ -733,6 +745,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
             public <T1, R1> List<FlowContext<R1>> process(To<T1, R1> to, List<FlowContext<T1>> contexts) {
                 List<FlowContext<R1>> cs = new ArrayList<>();
                 for (FlowContext<T1> context : contexts) {
+                    System.out.println(String.format("[To][process] contextId=%s->%s, sessionId=%s, contextSize=%s.",
+                            context.getPrevious(), context.getId(),
+                            context.getSession().getId(), contexts.size()));
                     Window window = context.getSession().getWindow();
                     window.setCompleteHook(to, context);
                     // get the token,and set to begin consume

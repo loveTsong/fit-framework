@@ -478,6 +478,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <R> AiState<R, D, O, RF, F> delegate(AiProcessFlow<O, R> aiFlow) {
         Validation.notNull(aiFlow, "Flow cannot be null.");
         Processor<O, R> processor = this.publisher().map(input -> {
+            System.out.println("delegate aiFlow");
             aiFlow.converse(input.getSession()).offer(input.getData());
             return (R) null;
         }, null).displayAs("delegate to flow", aiFlow.origin(), aiFlow.origin().start().getId());
@@ -543,6 +544,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <M extends ChatMessage> AiState<ChatMessage, D, O, RF, F> generate(FlowModel<O, M> model) {
         Validation.notNull(model, "Streaming Model operator cannot be null.");
         Processor<O, ChatMessage> processor = this.publisher().flatMap(input -> {
+            System.out.println("generate");
             return Flows.source(AiFlowSession.applyPattern(model, input.getData(), input.getSession()));
         }, null).displayAs("generate");
         return new AiState<>(new State<>(processor, this.flow().origin()), this.flow());

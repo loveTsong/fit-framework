@@ -67,12 +67,13 @@ public class RetrievalExampleController {
 
     public RetrievalExampleController(ChatModel chatModel, EmbedModel embedModel, ObjectSerializer serializer,
             @Value("${example.model.chat}") String chatModelName,
-            @Value("${example.model.embed}") String embedModelName) {
+            @Value("${example.model.embed}") String embedModelName,
+            @Value("${fel.openai.apiKey}") String apiKey) {
         DocumentEmbedModel documentEmbedModel =
                 new DefaultDocumentEmbedModel(embedModel, EmbedOption.custom().model(embedModelName).build());
         VectorStore vectorStore = new MemoryVectorStore(documentEmbedModel);
         ChatFlowModel chatFlowModel =
-                new ChatFlowModel(chatModel, ChatOption.custom().model(chatModelName).stream(false).build());
+                new ChatFlowModel(chatModel, ChatOption.custom().model(chatModelName).apiKey(apiKey).stream(false).build());
 
         AiProcessFlow<Tip, Content> retrieveFlow = AiFlows.<Tip>create()
                 .runnableParallel(history(), passThrough())
@@ -95,7 +96,10 @@ public class RetrievalExampleController {
         indexFlow.converse().offer(file);
 
         this.ragFlow = AiFlows.<String>create()
-                .map(query -> Tip.from("query", query))
+                .map(query -> {
+                    System.out.println("query");
+                    return Tip.from("query", query);
+                })
                 .runnableParallel(value("context", retrieveFlow), passThrough())
                 .prompt(Prompts.history(), Prompts.human(CHAT_PROMPT))
                 .generate(chatFlowModel)
