@@ -12,6 +12,7 @@ import modelengine.fel.core.chat.support.ChatMessages;
 import modelengine.fel.core.document.Content;
 import modelengine.fel.core.document.Document;
 import modelengine.fel.core.document.Measurable;
+import modelengine.fel.core.model.BlockModel;
 import modelengine.fel.core.pattern.Parser;
 import modelengine.fel.core.pattern.Pattern;
 import modelengine.fel.core.pattern.PostProcessor;
@@ -529,6 +530,22 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
             prompts.forEach(prompt -> messages.addAll(prompt.messages()));
             return ObjectUtils.<Prompt>cast(messages);
         }, null).displayAs("prompt"), this.flow().origin()), this.flow());
+    }
+
+    /**
+     * 生成大模型阻塞调用节点。
+     *
+     * @param model 表示模型算子实现的 {@link BlockModel}{@code <}{@link M}{@code >}。
+     * @param <M> 表示模型节点的输入数据类型。
+     * @return 表示大模型阻塞调用节点的 {@link AiState}{@code <}{@link ChatMessage}{@code , }{@link D}{@code ,
+     * }{@link O}{@code , }{@link RF}{@code , }{@link F}{@code >}。
+     * @throws IllegalArgumentException 当 {@code model} 为 {@code null} 时。
+     */
+    public <M extends ChatMessage> AiState<M, D, O, RF, F> generate(BlockModel<O, M> model) {
+        Validation.notNull(model, "Model operator cannot be null.");
+        return new AiState<>(new State<>(this.publisher()
+                .map(input -> AiFlowSession.applyPattern(model, input.getData(), input.getSession()), null)
+                .displayAs("generate"), this.flow().origin()), this.flow());
     }
 
     /**

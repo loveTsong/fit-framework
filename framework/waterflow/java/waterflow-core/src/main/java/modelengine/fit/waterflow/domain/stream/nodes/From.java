@@ -6,9 +6,9 @@
 
 package modelengine.fit.waterflow.domain.stream.nodes;
 
-import static modelengine.fit.waterflow.common.ErrorCodes.FLOW_ENGINE_INVALID_MANUAL_TASK;
+import static modelengine.fit.waterflow.ErrorCodes.FLOW_ENGINE_INVALID_MANUAL_TASK;
 
-import modelengine.fit.waterflow.common.exceptions.WaterflowException;
+import modelengine.fit.waterflow.exceptions.WaterflowException;
 import modelengine.fit.waterflow.domain.context.FlatMapSourceWindow;
 import modelengine.fit.waterflow.domain.context.FlatMapWindow;
 import modelengine.fit.waterflow.domain.context.FlowContext;
@@ -193,6 +193,7 @@ public class From<I> extends IdGenerator implements Publisher<I> {
                 processRef.get().fail(exception, Collections.singletonList(input));
             });
             start.just(data -> {
+                System.out.println("");
                 processRef.get().offer(data, session);
             }).offer(startSession);
             return null;

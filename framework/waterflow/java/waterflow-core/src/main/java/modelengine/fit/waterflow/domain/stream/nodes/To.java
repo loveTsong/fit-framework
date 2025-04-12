@@ -6,11 +6,11 @@
 
 package modelengine.fit.waterflow.domain.stream.nodes;
 
-import static modelengine.fit.waterflow.common.ErrorCodes.FLOW_NODE_CREATE_ERROR;
-import static modelengine.fit.waterflow.common.ErrorCodes.FLOW_NODE_MAX_TASK;
+import static modelengine.fit.waterflow.ErrorCodes.FLOW_NODE_CREATE_ERROR;
+import static modelengine.fit.waterflow.ErrorCodes.FLOW_NODE_MAX_TASK;
 
 import lombok.Getter;
-import modelengine.fit.waterflow.common.exceptions.WaterflowException;
+import modelengine.fit.waterflow.exceptions.WaterflowException;
 import modelengine.fit.waterflow.domain.common.Constants;
 import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;

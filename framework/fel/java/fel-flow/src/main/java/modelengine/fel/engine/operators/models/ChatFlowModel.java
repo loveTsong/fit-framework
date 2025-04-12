@@ -55,6 +55,6 @@ public class ChatFlowModel implements FlowModel<Prompt, ChatMessage> {
                 AiFlowSession.get().orElseThrow(() -> new IllegalStateException("The ai session cannot be empty."));
         ChatOption dynamicOption = nullIf(session.getInnerState(StateKey.CHAT_OPTION), this.option);
         Choir<ChatMessage> choir = ObjectUtils.cast(this.chatModel.generate(input, dynamicOption));
-        return new LlmEmitter<>(choir);
+        return new LlmEmitter<>(choir, input, session);
     }
 }
