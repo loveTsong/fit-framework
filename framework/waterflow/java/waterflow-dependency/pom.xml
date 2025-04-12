@@ -18,9 +18,6 @@
         <fel.version>1.0.0-SNAPSHOT</fel.version>
         <waterflow.version>1.0.0-SNAPSHOT</waterflow.version>
         <ohscript.version>0.0.3.6-SNAPSHOT</ohscript.version>
-        <task.version>0.1.0</task.version>
-        <jober.genericable.version>0.6.0-SNAPSHOT</jober.genericable.version>
-        <jober.multiversion.genericable.version>0.1.0-SNAPSHOT</jober.multiversion.genericable.version>
 
         <!-- Third-party versions -->
         <druid.version>1.2.20</druid.version>
@@ -100,7 +97,7 @@
             </dependency>
             <dependency>
                 <groupId>org.fitframework.waterflow</groupId>
-                <artifactId>waterflow-genericable</artifactId>
+                <artifactId>waterflow-common</artifactId>
                 <version>${waterflow.version}</version>
             </dependency>
 

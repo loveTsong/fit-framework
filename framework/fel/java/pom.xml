@@ -13,6 +13,8 @@
         <module>fel-core</module>
         <module>fel-flow</module>
         <module>maven-plugins</module>
+        <module>fel-jacoco-aggregator</module>
+        <module>fel-pipeline-core</module>
         <module>plugins</module>
         <module>services</module>
     </modules>
@@ -31,6 +33,9 @@
         <!-- Third-party versions -->
         <bytebuddy.version>1.17.0</bytebuddy.version>
         <jackson.version>2.18.2</jackson.version>
+        <lombok.version>1.18.26</lombok.version>
+        <hanlp.version>portable-1.8.4</hanlp.version>
+        <h2.version>2.2.224</h2.version>
 
         <!-- Test framework versions -->
         <assertj.version>3.27.3</assertj.version>
@@ -84,6 +89,11 @@
                 <artifactId>fit-util</artifactId>
                 <version>${fit.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.fitframework.service</groupId>
+                <artifactId>fit-security</artifactId>
+                <version>${fit.version}</version>
+            </dependency>
 
             <!-- WaterFlow -->
             <dependency>
@@ -105,11 +115,22 @@
             </dependency>
             <dependency>
                 <groupId>org.fitframework.fel</groupId>
-                <artifactId>tool-service</artifactId>
+                <artifactId>tool-service1</artifactId>
                 <version>${fel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fitframework.fel</groupId>
+                <artifactId>fel-langchain-service</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
             <!-- Third-party -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
@@ -120,12 +141,29 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.hankcs</groupId>
+                <artifactId>hanlp</artifactId>
+                <version>${hanlp.version}</version>
+            </dependency>
 
             <!-- Test -->
+            <dependency>
+                <groupId>org.fitframework.plugin</groupId>
+                <artifactId>fit-message-serializer-json-jackson</artifactId>
+                <version>${fit.version}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>org.fitframework</groupId>
                 <artifactId>fit-test-framework</artifactId>
                 <version>${fit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
