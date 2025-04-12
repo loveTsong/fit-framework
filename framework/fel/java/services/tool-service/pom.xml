@@ -9,7 +9,7 @@
         <version>3.5.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>tool-service</artifactId>
+    <artifactId>tool-service1</artifactId>
 
     <dependencies>
         <!-- FIT -->

@@ -6,14 +6,20 @@
 
 package modelengine.fel.engine.flows;
 
+import modelengine.fel.core.chat.ChatMessage;
 import modelengine.fel.core.chat.ChatOption;
 import modelengine.fel.core.memory.Memory;
 import modelengine.fel.engine.activities.AiStart;
 import modelengine.fel.engine.activities.FlowCallBack;
+import modelengine.fel.engine.operators.models.ChatChunk;
+import modelengine.fel.engine.operators.models.StreamingConsumer;
+import modelengine.fel.engine.operators.sources.Source;
 import modelengine.fel.engine.util.StateKey;
+import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.stream.operators.Operators;
 import modelengine.fitframework.inspection.Validation;
+import modelengine.fitframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -85,6 +91,30 @@ public class Conversation<D, R> {
     }
 
     /**
+     * 当前会话订阅一个发射源，由发射源驱动会话执行，会话结束后会注销本次订阅。
+     * <p>注意发射源的 {@link Source#emit(Object, FlowSession)} 传入的 {@link FlowSession} 的状态数据，会被当前会话的各类
+     * {@code bind} 方法覆盖， 如 {@link Conversation#bind(String, Object)}、 {@link Conversation#bind(Memory)} 等。</p>
+     *
+     * @param source 表示发射源的 {@link Source}{@code <}{@link D}{@code >}。
+     * @return 表示线程同步器的 {@link ConverseLatch}{@code <}{@link R}{@code >}。
+     * @throws IllegalArgumentException 当 {@code source} 为 {@code null} 时。
+     */
+    // public ConverseLatch<R> offer(Source<D> source) {
+    //     Validation.notNull(source, "Source can not be null.");
+    //
+    //     FlowSession sessionClone = new FlowSession(this.session);
+    //     AiProcessFlow<D, R> processFlow = AiFlows.<D>create().just((data, ctx) -> {
+    //         FlowContext<D> flowContext = ObjectUtils.cast(ctx);
+    //         flowContext.getSession().copySessionState(sessionClone);
+    //     }).delegate(this.flow).close();
+    //     processFlow.offer(source);
+    //
+    //     Action finallyCb = this.callBackBuilder.getFinallyCb();
+    //     this.callBackBuilder.doOnFinally(finallyCb.andThen(() -> source.unregister(processFlow)));
+    //     return setListener(processFlow);
+    // }
+
+    /**
      * 绑定大模型超参数到对话上下文，用于流程后续的大模型节点。
      *
      * @param option 表示大模型超参数的 {@link ChatOption}。
@@ -107,6 +137,20 @@ public class Conversation<D, R> {
     public Conversation<D, R> bind(Memory memory) {
         Validation.notNull(memory, "Memory cannot be null.");
         this.session.setInnerState(StateKey.HISTORY, memory);
+        return this;
+    }
+
+    /**
+     * 绑定流式响应信息消费者到对话上下文，用于消费流程流转过程中的流式信息。
+     *
+     * @param consumer 表示流式响应信息消费者的 {@link StreamingConsumer}{@code <}{@link ChatMessage}{@code ,
+     * }{@link ChatChunk}{@code >}。
+     * @return 表示绑定了流式响应信息消费者的对话对象的 {@link Conversation}{@code <}{@link D}{@code , }{@link R}{@code >}。
+     * @throws IllegalArgumentException 当 {@code consumer} 为 {@code null} 时。
+     */
+    public Conversation<D, R> bind(StreamingConsumer<ChatMessage, ChatChunk> consumer) {
+        Validation.notNull(consumer, "Streaming consumer cannot be null.");
+        this.session.setInnerState(StateKey.STREAMING_CONSUMER, consumer);
         return this;
     }
 
