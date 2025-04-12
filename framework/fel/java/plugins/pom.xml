@@ -17,5 +17,6 @@
         <module>tool-executor</module>
         <module>tool-factory-repository</module>
         <module>tool-repository-simple</module>
+        <module>fel-langchain-runnable</module>
     </modules>
 </project>

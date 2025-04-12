@@ -25,7 +25,7 @@
         <!-- FEL -->
         <dependency>
             <groupId>org.fitframework.fel</groupId>
-            <artifactId>tool-service</artifactId>
+            <artifactId>tool-service1</artifactId>
         </dependency>
 
         <!-- Test Plugins -->

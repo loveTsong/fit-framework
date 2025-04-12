@@ -115,7 +115,9 @@ public class ModelTest {
             StringBuffer sb = new StringBuffer();
             AtomicInteger cnt = new AtomicInteger(0);
             this.boundStreamFlow.converse()
-                    .doOnConsume(sb::append)
+                    .doOnConsume(str -> {
+                        sb.append(str);
+                    })
                     .doOnFinally(cnt::getAndIncrement)
                     .offer(Tip.fromArray("test streaming model"))
                     .await();

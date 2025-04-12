@@ -123,7 +123,7 @@
             </dependency>
             <dependency>
                 <groupId>org.fitframework.waterflow</groupId>
-                <artifactId>waterflow-genericable</artifactId>
+                <artifactId>waterflow-common</artifactId>
                 <version>${waterflow.version}</version>
             </dependency>
 
