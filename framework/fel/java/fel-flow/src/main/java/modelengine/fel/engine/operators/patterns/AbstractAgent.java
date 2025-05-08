@@ -33,6 +33,10 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     private static final String AGENT_MEMORY = "agent_memory";
     private static final String CHECK_POINT = "check_point";
 
+    public ChatFlowModel getModel() {
+        return model;
+    }
+
     private final ChatFlowModel model;
     private final String memoryId;
 
@@ -66,9 +70,10 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
      * 执行工具调用。
      *
      * @param toolCalls 表示工具调用的 {@link List}{@code <}{@link ToolCall}{@code >}。
+     * @param ctx 表示工具调用上下文的 {@link StateContext}。
      * @return 表示工具调用结果的 {@link Prompt}。
      */
-    protected abstract Prompt doToolCall(List<ToolCall> toolCalls);
+    protected abstract Prompt doToolCall(List<ToolCall> toolCalls, StateContext ctx);
 
     @Override
     protected AiProcessFlow<Prompt, ChatMessage> buildFlow() {
@@ -93,6 +98,6 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     private void handleTool(ChatMessage message, StateContext ctx) {
         ChatMessages lastRequest = ctx.getState(this.memoryId);
         lastRequest.add(message);
-        lastRequest.addAll(this.doToolCall(message.toolCalls()).messages());
+        lastRequest.addAll(this.doToolCall(message.toolCalls(), ctx).messages());
     }
 }
