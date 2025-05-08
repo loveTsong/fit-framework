@@ -35,12 +35,6 @@ import java.util.Collections;
 public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, ChatMessage> {
     private static final StreamingConsumer<ChatMessage, ChatMessage> EMPTY_CONSUMER = (acc, chunk) -> {};
 
-    private final ChatMessage chunkAcc = new AiMessage(StringUtils.EMPTY);
-    // 说这里也是没用，应该由外面维护历史记录。
-    private final Memory memory;
-    private final ChatMessage question;
-    private final StreamingConsumer<ChatMessage, ChatMessage> consumer;
-
     /**
      * 初始化 {@link LlmEmitter}。
      *
@@ -51,15 +45,11 @@ public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, Chat
     public LlmEmitter(Publisher<O> publisher, Prompt prompt, FlowSession session) {
         super(publisher, data -> data);
         Validation.notNull(session, "The session cannot be null.");
-        this.memory = session.getInnerState(StateKey.HISTORY);
-        this.question = ObjectUtils.getIfNull(session.getInnerState(StateKey.HISTORY_INPUT),
-                () -> this.getDefaultQuestion(prompt));
-        this.consumer = ObjectUtils.nullIf(session.getInnerState(StateKey.STREAMING_CONSUMER), EMPTY_CONSUMER);
     }
 
     @Override
     protected void consumeAction(O source, ChatMessage target) {
-        this.consumer.accept(this.chunkAcc, target);
+        System.out.println(String.format("[%s][consumeAction] %s", Thread.currentThread().getId(), target.text()));
     }
 
     private ChatMessage getDefaultQuestion(Prompt prompt) {
