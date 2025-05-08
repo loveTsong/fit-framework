@@ -35,11 +35,11 @@ import java.util.Collections;
 public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, ChatMessage> {
     private static final StreamingConsumer<ChatMessage, ChatMessage> EMPTY_CONSUMER = (acc, chunk) -> {};
 
-    private final ChatMessage chunkAcc = new AiMessage(StringUtils.EMPTY);
+    // private final ChatMessage chunkAcc = new AiMessage(StringUtils.EMPTY);
     // 说这里也是没用，应该由外面维护历史记录。
-    private final Memory memory;
-    private final ChatMessage question;
-    private final StreamingConsumer<ChatMessage, ChatMessage> consumer;
+    // private final Memory memory;
+    // private final ChatMessage question;
+    // private final StreamingConsumer<ChatMessage, ChatMessage> consumer;
     // 这个应该没用了，只是用来触发异常回调
     // private final Processor<Prompt, ChatChunk> processor;
     // private final FlowContext<Prompt> context;
@@ -54,10 +54,10 @@ public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, Chat
     public LlmEmitter(Publisher<O> publisher, Prompt prompt, FlowSession session) {
         super(publisher, data -> data);
         Validation.notNull(session, "The session cannot be null.");
-        this.memory = session.getInnerState(StateKey.HISTORY);
-        this.question = ObjectUtils.getIfNull(session.getInnerState(StateKey.HISTORY_INPUT),
-                () -> this.getDefaultQuestion(prompt));
-        this.consumer = ObjectUtils.nullIf(session.getInnerState(StateKey.STREAMING_CONSUMER), EMPTY_CONSUMER);
+        // this.memory = session.getInnerState(StateKey.HISTORY);
+        // this.question = ObjectUtils.getIfNull(session.getInnerState(StateKey.HISTORY_INPUT),
+        //         () -> this.getDefaultQuestion(prompt));
+        // this.consumer = ObjectUtils.nullIf(session.getInnerState(StateKey.STREAMING_CONSUMER), EMPTY_CONSUMER);
         // this.processor = Validation.notNull(
         //         cast(session.getInnerState(StateKey.STREAMING_PROCESSOR)), "The processor cannot be null.");
         // this.context = Validation.notNull(
@@ -66,9 +66,10 @@ public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, Chat
 
     @Override
     protected void consumeAction(O source, ChatMessage target) {
+        System.out.println(String.format("[%s][consumeAction] %s", Thread.currentThread().getId(), target.text()));
         // todo songyongtan 这里需要关注如何聚合这个acc
         // this.chunkAcc.merge(source);
-        this.consumer.accept(this.chunkAcc, target);
+        // this.consumer.accept(this.chunkAcc, target);
     }
 
     // @Override
