@@ -42,6 +42,13 @@ public class FlowSessionRepo {
                 .getNextToSession(session);
     }
 
+    public static FlowSession getNextEmitterHandleSession(String flowId, FlowSession session) {
+        Validation.notNull(flowId, "Flow id cannot be null.");
+        Validation.notNull(session, "Session cannot be null.");
+        return getFlowSessionCache(flowId, session)
+                .getNextEmitterHandleSession(session);
+    }
+
     /**
      * 获取该 session 的 window 对应的向下一个 emit listener 传递数据使用的 session。
      *
@@ -130,6 +137,8 @@ public class FlowSessionRepo {
          */
         private final Map<UUID, Map<Object, FlowSession>> nextEmitSessions = new ConcurrentHashMap<>();
 
+        private final Map<UUID, FlowSession> nextEmitterHandleSessions = new ConcurrentHashMap<>();
+
         /**
          * 记录流程中经过 flatMap 节点产生的窗口信息，用于将同一批数据汇聚。
          * 其中索引为当前节点正在处理数据的窗口的唯一标识。
@@ -156,6 +165,18 @@ public class FlowSessionRepo {
         private FlowSession getNextEmitSession(FlowSession session, Object listener) {
             return this.nextEmitSessions.computeIfAbsent(session.getWindow().key(), __ -> new ConcurrentHashMap<>())
                     .computeIfAbsent(listener, __ -> generateNextSession(session));
+        }
+
+        private FlowSession getNextEmitterHandleSession(FlowSession session) {
+            return this.nextEmitterHandleSessions.computeIfAbsent(session.getWindow().key(), __ -> {
+                FlowSession next = new FlowSession();
+                Window nextWindow = next.begin();
+                // if the processor is not reduce, then inherit previous window condition
+                if (!session.isAccumulator()) {
+                    nextWindow.setCondition(session.getWindow().getCondition());
+                }
+                return next;
+            });
         }
 
         /**

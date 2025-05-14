@@ -80,6 +80,12 @@ public class State<O, D, I, F extends Flow<D>> extends Start<O, D, I, F>
         this.processor.register(handler);
     }
 
+    public void unregister(EmitterListener<O, FlowSession> listener) {
+        if (listener != null) {
+            this.processor.unregister(listener);
+        }
+    }
+
     @Override
     public void emit(O data, FlowSession token) {
         this.processor.emit(data, token);

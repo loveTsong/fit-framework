@@ -200,11 +200,21 @@ public class FlatMapSourceWindow extends Window {
      */
     @Override
     public void complete() {
+        System.out.println(String.format("[%s][FlatMapSourceWindow.complete.before] windowId=%s, isComplete=%s, sessionId=%s",
+                Thread.currentThread().getId(),
+                this.id(),
+                this.isComplete(), this.getSession().getId()
+        ));
         if (this.from.isDone() && this.indexSlots.values().size() == this.from.tokenCount()
                 && this.indexSlots.values().stream().allMatch(UnconfirmedIndexSlot::isDone)) {
             if (this.getSession().preserved()) {
                 preserveIndexes();
             }
+            System.out.println(String.format("[%s][FlatMapSourceWindow.complete] windowId=%s, isComplete=%s, sessionId=%s",
+                    Thread.currentThread().getId(),
+                    this.id(),
+                    this.isComplete(), this.getSession().getId()
+            ));
             super.complete();
         }
     }
