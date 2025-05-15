@@ -422,11 +422,10 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
         Validation.notNull(pattern, "Pattern operator cannot be null.");
         FlowPattern<O, R> flowPattern = this.castFlowPattern(pattern);
         Processor<O, R> orProcessor = this.publisher().flatMap(input -> {
-            FlowEmitter<R> bind = flowPattern.bind(input);
-            // FlowEmitter<R> cachedEmitter = FlowEmitter.from(flowPattern);
+            FlowEmitter<R> emitter = flowPattern.getEmitter(input);
             AiFlowSession.applyPattern(flowPattern, input.getData(), input.getSession());
             System.out.println(String.format("[flows][source.before] streamId=%s", this.publisher().getStreamId()));
-            return Flows.source(bind);
+            return Flows.source(emitter);
         }, null);
         this.displayPatternProcessor(pattern, orProcessor);
         return new AiState<>(new State<>(orProcessor, this.flow().origin()), this.flow());

@@ -10,10 +10,7 @@ import modelengine.fel.core.pattern.Pattern;
 import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.emitters.Emitter;
-import modelengine.fit.waterflow.domain.emitters.EmitterListener;
 import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 流程委托单元。
@@ -24,41 +21,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 2024-04-22
  */
 public interface FlowPattern<I, O> extends Pattern<I, O>, Emitter<O, FlowSession> {
-    public default FlowEmitter<O> bind(FlowContext<I> input) {
-        FlowEmitter<O> cachedEmitter = new FlowEmitter.AutoCompleteEmitter<>();
-        AtomicReference<EmitterListener<O, FlowSession>> emitterListenerRef = new AtomicReference<>();
-        EmitterListener<O, FlowSession> emitterListener = (data, session) -> {
-            // 结束时取消注册
-            if (!input.getSession().getId().equals(session.getInnerState("parentSessionId"))) {
-                System.out.println(String.format("[%s][FlowPattern.bind] ignore. data=%s, session=%s, windowId=%s, isComplete=%s, inputSessionId=%s",
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete(),
-                        input.getSession().getId()
-                ));
-                return;
-            }
-            if (session.isCompleted()) {
-                System.out.println(String.format("[%s][FlowPattern.bind] unregister. data=%s, session=%s, windowId=%s, isComplete=%s",
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete()));
-                this.unregister(emitterListenerRef.get());
-            }
-            System.out.println(String.format("[%s][FlowPattern.bind] accept. data=%s, session=%s, windowId=%s, isComplete=%s",
-                    Thread.currentThread().getId(),
-                    data,
-                    session.getId(),
-                    session.getWindow().id(),
-                    session.getWindow().isComplete()));
-            cachedEmitter.emit(data, session);
-        };
-        emitterListenerRef.set(emitterListener);
-        this.register(emitterListener);
-        return cachedEmitter;
-    }
+    /**
+     * 生成对应数据的发射器。
+     *
+     * @param input 表示输入数据上下文的 {@link FlowContext}{@code <}{@link I}{@code >}。
+     * @return 表示数据的发射器的 {@link FlowEmitter}{@code <}{@link O}{@code >}。
+     */
+    FlowEmitter<O> getEmitter(FlowContext<I> input);
 }

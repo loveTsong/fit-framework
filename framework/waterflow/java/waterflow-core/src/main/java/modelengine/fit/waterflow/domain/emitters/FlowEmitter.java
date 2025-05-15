@@ -43,6 +43,12 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
     private final List<D> data = new ArrayList<>();
 
     /**
+     * 构造空数据的发射器，具体数据由用户自己投递。
+     */
+    public FlowEmitter() {
+    }
+
+    /**
      * 构造单个数据的Emitter
      *
      * @param data 单个数据
