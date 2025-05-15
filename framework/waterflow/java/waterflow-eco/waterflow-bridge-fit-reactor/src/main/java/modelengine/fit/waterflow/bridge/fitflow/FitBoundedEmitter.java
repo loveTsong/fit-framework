@@ -43,12 +43,10 @@ public abstract class FitBoundedEmitter<O, D> extends FlowEmitter<D> {
 
     @Override
     public synchronized void start(FlowSession session) {
-        System.out.println(String.format("[%s][FitBoundedEmitter][start] session=%s, windowId=%s", Thread.currentThread().getId(), session.getId(), session.getWindow().id()));
         if (session != null) {
             session.begin();
         }
-        // todo songyongtan 这里新增代码是不是就能解决构造时就订阅的问题, 先临时这样使用，后面修改，这样应该会有假流式问题
-        this.publisher.subscribe(new EmitterSubscriber<>(this));
+        System.out.println(String.format("[%s][FitBoundedEmitter][start] session=%s, windowId=%s", Thread.currentThread().getId(), session.getId(), session.getWindow().id()));
 
         this.setFlowSession(session);
         this.setStarted();
@@ -62,8 +60,7 @@ public abstract class FitBoundedEmitter<O, D> extends FlowEmitter<D> {
         System.out.println(String.format("[%s][FitBoundedEmitter][start end] session=%s, windowId=%s, isComplete=%s, tokens=%s",
                 Thread.currentThread().getId(), session.getId(), session.getWindow().id(),
                 session.getWindow().isComplete(), session.getWindow().debugTokens()));
-        // // todo songyongtan 这里新增代码是不是就能解决构造时就订阅的问题，但是这里会触发emitter下window机制问题
-        // this.publisher.subscribe(new EmitterSubscriber<>(this));
+        this.publisher.subscribe(new EmitterSubscriber<>(this));
     }
 
     protected abstract void consumeAction(O source, D target);
