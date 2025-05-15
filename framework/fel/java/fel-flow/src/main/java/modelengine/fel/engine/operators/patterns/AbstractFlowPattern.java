@@ -10,12 +10,16 @@ import modelengine.fel.core.pattern.Pattern;
 import modelengine.fel.engine.flows.AiProcessFlow;
 import modelengine.fel.engine.flows.ConverseLatch;
 import modelengine.fel.engine.util.AiFlowSession;
+import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.context.Window;
 import modelengine.fit.waterflow.domain.emitters.EmitterListener;
+import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
 import modelengine.fit.waterflow.domain.flow.Flow;
 import modelengine.fitframework.inspection.Validation;
 import modelengine.fitframework.util.LazyLoader;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 流程委托单元。
@@ -51,8 +55,6 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
             this.getFlow().unregister(listener);
         }
     }
-
-
 
     @Override
     public void emit(O data, FlowSession session) {
@@ -105,6 +107,45 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
      */
     public Flow<I> origin() {
         return this.getFlow().origin();
+    }
+
+    @Override
+    public FlowEmitter<O> getEmitter(FlowContext<I> input) {
+        FlowEmitter<O> cachedEmitter = new FlowEmitter.AutoCompleteEmitter<>();
+        AtomicReference<EmitterListener<O, FlowSession>> emitterListenerRef = new AtomicReference<>();
+        EmitterListener<O, FlowSession> emitterListener = (data, session) -> {
+            // 结束时取消注册
+            if (!input.getSession().getId().equals(session.getInnerState("parentSessionId"))) {
+                System.out.println(String.format("[%s][FlowPattern.bind] ignore. data=%s, session=%s, windowId=%s, isComplete=%s, inputSessionId=%s",
+                        Thread.currentThread().getId(),
+                        data,
+                        session.getId(),
+                        session.getWindow().id(),
+                        session.getWindow().isComplete(),
+                        input.getSession().getId()
+                ));
+                return;
+            }
+            if (session.isCompleted()) {
+                System.out.println(String.format("[%s][FlowPattern.bind] unregister. data=%s, session=%s, windowId=%s, isComplete=%s",
+                        Thread.currentThread().getId(),
+                        data,
+                        session.getId(),
+                        session.getWindow().id(),
+                        session.getWindow().isComplete()));
+                this.unregister(emitterListenerRef.get());
+            }
+            System.out.println(String.format("[%s][FlowPattern.bind] accept. data=%s, session=%s, windowId=%s, isComplete=%s",
+                    Thread.currentThread().getId(),
+                    data,
+                    session.getId(),
+                    session.getWindow().id(),
+                    session.getWindow().isComplete()));
+            cachedEmitter.emit(data, session);
+        };
+        emitterListenerRef.set(emitterListener);
+        this.register(emitterListener);
+        return cachedEmitter;
     }
 
     private AiProcessFlow<I, O> getFlow() {

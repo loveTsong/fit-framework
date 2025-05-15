@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ModelTest {
     private final ChatFlowModel model = new ChatFlowModel((prompt, chatOption) -> Choir.create(emitter -> {
         if (chatOption.stream()) {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 4; i++) {
                 emitter.emit(new AiMessage(String.valueOf(i)));
                 SleepUtil.sleep(1);
             }
