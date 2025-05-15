@@ -816,10 +816,10 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                     R1 data = to.map.process(context);
                     // context.getSession() could be changed by processor
                     FlowSession session = context.getSession();
-                    // create new session and window token for processed data
-                    FlowSession nextSession = to.getNextSession(session);
                     // ignore reduce null, reduce null means reduce not finished
                     if (data != null) {
+                        // create new session and window token for processed data
+                        FlowSession nextSession = to.getNextSession(session);
                         FlowContext<R1> clonedContext = context.generate(data, to.getId());
                         clonedContext.setSession(nextSession);
                         if (context.getSession().isAccumulator()) {
@@ -835,6 +835,10 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         //accept the consumed token, and create a new token for the handled data, meanwhile,consume the peeked
                         nextSession.getWindow().acceptToken(peekedToken);
                         cs.add(clonedContext);
+                        //if previous stream complete, complete this stream
+                        if (context.getSession().getWindow().isDone()) {
+                            nextSession.getWindow().complete();
+                        }
                     } else {
                         peekedToken.finishConsume();//consume the peeked
                     }
@@ -845,11 +849,6 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                     // if (context.getWindow().isDone()) {
                     //     to.processingSessions.remove(context.getSession().getId());
                     // }
-
-                    //if previous stream complete, complete this stream
-                    if (context.getSession().getWindow().isDone()) {
-                        nextSession.getWindow().complete();
-                    }
                 }
                 return cs;
             }
