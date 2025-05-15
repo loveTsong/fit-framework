@@ -8,6 +8,7 @@ package modelengine.fit.waterflow.domain.stream.nodes;
 
 import static modelengine.fit.waterflow.ErrorCodes.FLOW_ENGINE_INVALID_MANUAL_TASK;
 
+import modelengine.fit.waterflow.domain.context.repo.flowsession.FlowSessionRepo;
 import modelengine.fit.waterflow.exceptions.WaterflowException;
 import modelengine.fit.waterflow.domain.context.FlatMapSourceWindow;
 import modelengine.fit.waterflow.domain.context.FlatMapWindow;
@@ -234,7 +235,11 @@ public class From<I> extends IdGenerator implements Publisher<I> {
     public <O> Processor<I, O> process(Operators.Process<FlowContext<I>, O> processor, Operators.Whether<I> whether) {
         AtomicReference<Node<I, O>> processRef = new AtomicReference<>();
         Operators.Map<FlowContext<I>, O> wrapper = input -> {
-            processor.process(input, input, data -> processRef.get().offer(data, input.getSession()));
+            FlowSession nextSession = FlowSessionRepo.getNextToSession(this.streamId, input.getSession());
+            processor.process(input, input, data -> processRef.get().offer(data, nextSession));
+            if (input.getSession().getWindow().isOngoing()) {
+                nextSession.getWindow().complete();
+            }
             return null;
         };
         Node<I, O> node = new Node<>(this.getStreamId(), wrapper, repo, messenger, locks);
