@@ -88,7 +88,7 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
         return new SimplePattern<>(data -> {
             System.out.println("sync");
             FlowSession require = AiFlowSession.require();
-            FlowSession session = new FlowSession();
+            FlowSession session = new FlowSession(true);
             Window window = session.begin();
             session.copySessionState(require);
             ConverseLatch<O> conversation = this.getFlow().converse(session).offer(data);
