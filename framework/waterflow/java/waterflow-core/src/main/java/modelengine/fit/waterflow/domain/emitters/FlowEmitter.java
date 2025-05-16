@@ -136,6 +136,9 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
 
     @Override
     public synchronized void start(FlowSession session) {
+        if (this.isStart) {
+            return;
+        }
         if (session != null) {
             session.begin();
         }
