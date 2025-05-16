@@ -514,6 +514,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                 if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
                     this.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
                 }
+                if (context.getWindow().isDone()) {
+                    this.processingSessions.remove(context.getSession().getId());
+                }
             });
         } catch (Exception ex) {
             LOG.error("Node process exception stream-id: {}, node-id: {}, position-id: {}, traceId: {}. caused by: {}",
