@@ -29,7 +29,9 @@ import modelengine.fel.engine.flows.AiProcessFlow;
 import modelengine.fel.engine.flows.Conversation;
 import modelengine.fel.engine.operators.models.FlowModel;
 import modelengine.fel.engine.operators.patterns.AbstractFlowPattern;
+import modelengine.fel.engine.operators.patterns.FlowNodeSupportable;
 import modelengine.fel.engine.operators.patterns.FlowPattern;
+import modelengine.fel.engine.operators.patterns.FlowSupportable;
 import modelengine.fel.engine.operators.patterns.SimpleFlowPattern;
 import modelengine.fel.engine.operators.prompts.PromptTemplate;
 import modelengine.fel.engine.util.AiFlowSession;
@@ -47,7 +49,6 @@ import modelengine.fitframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -479,14 +480,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
      */
     public <R> AiState<R, D, O, RF, F> delegate(AiProcessFlow<O, R> aiFlow) {
         Validation.notNull(aiFlow, "Flow cannot be null.");
-        Processor<O, R> processor = this.publisher().map(input -> {
-            System.out.println("delegate aiFlow");
-            aiFlow.converse(input.getSession()).offer(input.getData());
-            return (R) null;
-        }, null).displayAs("delegate to flow", aiFlow.origin(), aiFlow.origin().start().getId());
-        AiState<R, D, O, RF, F> state = new AiState<>(new State<>(processor, this.flow().origin()), this.flow());
-        state.offer(aiFlow);
-        return state;
+        return this.delegate(new FlowSupportable<>(aiFlow));
     }
 
     /**
@@ -506,14 +500,7 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <R> AiState<R, D, O, RF, F> delegate(AiProcessFlow<O, R> aiFlow, String nodeId) {
         Validation.notNull(aiFlow, "Flow cannot be null.");
         Validation.notBlank(nodeId, "Node id cannot be blank.");
-        Processor<O, R> processor = this.publisher().map(input -> {
-            aiFlow.converse(input.getSession()).offer(nodeId, Collections.singletonList(input.getData()));
-            return (R) null;
-        }, null).displayAs("delegate to node", aiFlow.origin(), nodeId);
-
-        AiState<R, D, O, RF, F> state = new AiState<>(new State<>(processor, this.flow().origin()), this.flow());
-        state.offer(aiFlow);
-        return state;
+        return this.delegate(new FlowNodeSupportable<>(aiFlow, nodeId));
     }
 
     /**
