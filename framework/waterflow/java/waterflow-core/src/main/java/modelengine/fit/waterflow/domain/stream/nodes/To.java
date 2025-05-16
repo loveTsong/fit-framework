@@ -138,7 +138,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
     @Getter
     private ProcessMode processMode;
 
-    private Map<String, Integer> processingSessions = new ConcurrentHashMap<>();//todo:夏斐，确定合适清除，否则有内存泄露风险
+    private Map<String, Integer> processingSessions = new ConcurrentHashMap<>();
 
     private Operators.Validator<I> validator = (repo, to) -> repo.requestMappingContext(to.streamId,
             to.froms.stream().map(Identity::getId).collect(Collectors.toList()), to.processingSessions);
@@ -514,6 +514,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                 if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
                     this.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
                 }
+                if (context.getWindow().isDone()) {
+                    this.processingSessions.remove(context.getSession().getId());
+                }
             });
         } catch (Exception ex) {
             LOG.error("Node process exception stream-id: {}, node-id: {}, position-id: {}, traceId: {}. caused by: {}",
@@ -541,6 +544,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
         Optional.ofNullable(this.errorHandler).ifPresent(handler -> handler.handle(exception, retryable, preList));
         Optional.ofNullable(this.globalErrorHandler)
                 .ifPresent(handler -> handler.handle(exception, retryable, preList));
+        preList.forEach(context -> this.processingSessions.remove(context.getSession().getId()));
     }
 
 
@@ -842,13 +846,6 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                     } else {
                         peekedToken.finishConsume();//consume the peeked
                     }
-                    //keep order
-                    // if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
-                    //     to.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
-                    // }
-                    // if (context.getWindow().isDone()) {
-                    //     to.processingSessions.remove(context.getSession().getId());
-                    // }
                 }
                 return cs;
             }
