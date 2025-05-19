@@ -35,9 +35,9 @@ import modelengine.fel.engine.operators.prompts.Prompts;
 import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.context.Window;
-import modelengine.fit.waterflow.domain.utils.IdGenerator;
 import modelengine.fitframework.resource.web.Media;
 import modelengine.fitframework.util.CollectionUtils;
+import modelengine.fitframework.util.ObjectUtils;
 import modelengine.fitframework.util.StringUtils;
 
 import org.junit.jupiter.api.DisplayName;
@@ -141,8 +141,13 @@ public class PatternTest {
     @DisplayName("测试 SimplePattern")
     void shouldOkWhenDelegateSimplePattern() {
         FlowSession session = new FlowSession();
+        String key = "key";
+        String value = "value";
+        session.setState(key, value);
         SimplePattern<Prompt, String> pattern = new SimplePattern<>(prompt -> {
-            String sessionId = AiFlowSession.get().map(IdGenerator::getId).orElse(StringUtils.EMPTY);
+            String sessionId = AiFlowSession.get()
+                    .map(target -> ObjectUtils.<String>cast(target.getState(key)))
+                    .orElse(StringUtils.EMPTY);
             return prompt.text() + sessionId;
         });
         Window token = session.begin();
@@ -155,7 +160,8 @@ public class PatternTest {
         token.complete();
         String result = offer.await();
 
-        assertThat(result).isEqualTo("human msg." + session.getId());
+        assertThat(result).isEqualTo("human msg." + value);
+
     }
 
     private static Memory getMockMemory() {

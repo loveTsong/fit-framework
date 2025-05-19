@@ -14,13 +14,10 @@ import modelengine.fel.engine.activities.FlowCallBack;
 import modelengine.fel.engine.operators.models.ChatChunk;
 import modelengine.fel.engine.operators.models.StreamingConsumer;
 import modelengine.fel.engine.operators.sources.Source;
-import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fel.engine.util.StateKey;
-import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.stream.operators.Operators;
 import modelengine.fitframework.inspection.Validation;
-import modelengine.fitframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -67,7 +64,7 @@ public class Conversation<D, R> {
     @SafeVarargs
     public final ConverseLatch<R> offer(D... data) {
         ConverseLatch<R> latch = setListener(this.flow);
-        FlowSession newSession = new FlowSession(this.session);
+        FlowSession newSession = FlowSession.newRootSession(this.session, this.session.preserved());
         newSession.getWindow().setFrom(null);
         System.out.println(String.format("[%s][Conversation.offer] session=%s, windowId=%s, newWindowId=%s",
                 Thread.currentThread().getId(), this.session.getId(), this.session.getWindow().id(),
