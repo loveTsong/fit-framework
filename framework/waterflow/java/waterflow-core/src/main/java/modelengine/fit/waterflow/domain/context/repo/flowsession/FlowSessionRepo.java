@@ -49,6 +49,13 @@ public class FlowSessionRepo {
                 .getNextEmitterHandleSession(session);
     }
 
+    public static int getNextAccOrder(String flowId, String nodeId, FlowSession session) {
+        Validation.notNull(flowId, "Flow id cannot be null.");
+        Validation.notNull(nodeId, "Node id cannot be null.");
+        Validation.notNull(session, "Session cannot be null.");
+        return getFlowSessionCache(flowId, session).getNextAccOrder(nodeId);
+    }
+
     /**
      * 获取该 session 的 window 对应的向下一个 emit listener 传递数据使用的 session。
      *
@@ -145,6 +152,8 @@ public class FlowSessionRepo {
          */
         private final Map<UUID, FlatMapSourceWindow> flatMapSourceWindows = new ConcurrentHashMap<>();
 
+        private final Map<String, Integer> accOrders = new ConcurrentHashMap<>();
+
         /**
          * 获取该 session 的 window 对应的向下一个节点传递数据使用的 session。
          *
@@ -193,6 +202,15 @@ public class FlowSessionRepo {
                 newWindow.getSession().setWindow(newWindow);
                 newWindow.getSession().begin();
                 return newWindow;
+            });
+        }
+
+        private int getNextAccOrder(String nodeId) {
+            return this.accOrders.compute(nodeId, (key, value) -> {
+                if (value == null) {
+                    return 0;
+                }
+                return value + 1;
             });
         }
 

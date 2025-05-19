@@ -96,6 +96,7 @@ public class Fork<O, D, I, F extends Flow<D>> extends Activity<D, F> {
                 accs.put(key, acc);
 
                 if (acc.second() == forkNumber.get()) {
+                    System.out.println(String.format("[%s][fork.join] all finish. formNum=%s", Thread.currentThread().getId(), forkNumber.get()));
                     accs.remove(key);
                     return acc.first();
                 } else {

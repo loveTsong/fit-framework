@@ -35,6 +35,7 @@ import modelengine.fel.engine.operators.prompts.Prompts;
 import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.context.Window;
+import modelengine.fit.waterflow.domain.utils.SleepUtil;
 import modelengine.fitframework.resource.web.Media;
 import modelengine.fitframework.util.CollectionUtils;
 import modelengine.fitframework.util.ObjectUtils;
@@ -72,6 +73,9 @@ public class PatternTest {
 
         converse.doOnConsume(r -> answer.append(r.text())).offer("question").await();
         assertThat(answer.toString()).isEqualTo("answer question from context with my history");
+        System.out.println("xxxxxx===sleep before");
+        SleepUtil.sleep(3000);
+        System.out.println("xxxxxx===sleep after");
 
         // 验证 runnableParallel 中 join 初始值重新获取，不影响后续的请求。
         StringBuilder answer1 = new StringBuilder();
