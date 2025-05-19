@@ -64,7 +64,8 @@ public class Conversation<D, R> {
     @SafeVarargs
     public final ConverseLatch<R> offer(D... data) {
         ConverseLatch<R> latch = setListener(this.flow);
-        FlowSession newSession = FlowSession.newRootSession(this.session, this.session.preserved());
+        // FlowSession newSession = FlowSession.newRootSession(this.session, this.session.preserved());
+        FlowSession newSession = new FlowSession(this.session);
         newSession.getWindow().setFrom(null);
         System.out.println(String.format("[%s][Conversation.offer] session=%s, windowId=%s, newWindowId=%s",
                 Thread.currentThread().getId(), this.session.getId(), this.session.getWindow().id(),

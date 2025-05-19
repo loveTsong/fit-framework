@@ -197,9 +197,9 @@ public class ModelTest {
                     .close();
             System.out.println(String.format("[testxx] mainFlowId=%s, streamId=%s", mainFlow.getId(), mainFlow.start().getStreamId()));
 
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < 3; ++i) {
                 String testStreamingModel = mainFlow.converse().offer(Tip.fromArray("test streaming model")).await();
-                System.out.println(i + " xxxxxxxxxx-end-xxxxxx:" + testStreamingModel);
+                System.out.println(i + "|xxxxxxxxxx-end-xxxxxx:" + testStreamingModel);
                 SleepUtil.sleep(1000);
             }
         }

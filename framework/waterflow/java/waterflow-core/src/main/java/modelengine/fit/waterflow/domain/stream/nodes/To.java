@@ -501,6 +501,23 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         ctx.getWindow().isComplete()
                         ));
             });
+            preList.forEach(ctx -> {
+                if (ctx.getWindow().isDone()) {
+                    System.out.println(String.format("[%s][To][onProcess.after.preList.isDone] contextId=%s->%s, index=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, streamId=%s, tokens=%s, isComplete=%s.",
+                            Thread.currentThread().getId(),
+                            ctx.getPrevious(),
+                            ctx.getId(),
+                            ctx.getIndex(),
+                            ctx.getSession().getId(), afterList.size(),
+                            ctx.getWindow().id(),
+                            ctx.getWindow().tokenCount(),
+                            this.getStreamId(),
+                            ctx.getWindow().debugTokens(),
+                            ctx.getWindow().isComplete()
+                    ));
+                    this.processingSessions.remove(ctx.getSession().getId());
+                }
+            });
             this.afterProcess(preList, afterList);
             if (CollectionUtils.isNotEmpty(afterList)) {
                 // 查找一个transaction里的所有数据的都完成了，运行callback给stream外反馈数据
@@ -511,11 +528,8 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
             afterList.forEach(context -> this.emit(context.getData(), context.getSession()));
             // keep order
             preList.forEach(context -> {
-                if (context.getIndex() > Constants.NOT_PRESERVED_INDEX) {
+                if (context.getIndex() > Constants.NOT_PRESERVED_INDEX && !context.getWindow().isDone()) {
                     this.processingSessions.put(context.getSession().getId(), context.getIndex() + 1);
-                }
-                if (context.getWindow().isDone()) {
-                    this.processingSessions.remove(context.getSession().getId());
                 }
             });
         } catch (Exception ex) {
@@ -774,6 +788,10 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
         return FlowSessionRepo.getNextToSession(this.streamId, session);
     }
 
+    private int getNextAccOrder(FlowSession session) {
+        return FlowSessionRepo.getNextAccOrder(this.streamId, this.id, session);
+    }
+
     /**
      * ProcessMode
      *
@@ -827,13 +845,18 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         FlowContext<R1> clonedContext = context.generate(data, to.getId());
                         clonedContext.setSession(nextSession);
                         if (context.getSession().isAccumulator()) {
-                            Integer index = to.counter.get(context.getSession().getId());
-                            if (index == null) {
-                                index = 0;
-                            } else {
-                                index++;
-                            }
-                            to.counter.put(context.getSession().getId(), index);
+                            int index = to.getNextAccOrder(context.getSession());
+                            System.out.println(String.format("[%s][To.MAPPING.getNextAccOrder] data=%s, index=%s",
+                                    Thread.currentThread().getId(),
+                                    data,
+                                    index));
+                            // Integer index = to.counter.get(context.getSession().getId());
+                            // if (index == null) {
+                            //     index = 0;
+                            // } else {
+                            //     index++;
+                            // }
+                            // to.counter.put(context.getSession().getId(), index);
                             clonedContext.setIndex(index);
                         }
                         //accept the consumed token, and create a new token for the handled data, meanwhile,consume the peeked
