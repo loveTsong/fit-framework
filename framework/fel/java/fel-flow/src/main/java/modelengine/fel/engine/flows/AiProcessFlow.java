@@ -16,8 +16,8 @@ import modelengine.fit.waterflow.domain.flow.ProcessFlow;
 import modelengine.fit.waterflow.domain.stream.reactive.Publisher;
 import modelengine.fitframework.util.ObjectUtils;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * AI 数据处理流程，在 {@link AiFlow} 的基础上增加流程间的数据流转能力，并对外提供对话语义。
@@ -30,7 +30,7 @@ import java.util.Map;
 public class AiProcessFlow<D, R> extends AiFlow<D, ProcessFlow<D>>
         implements EmitterListener<D, FlowSession>, Emitter<R, FlowSession> {
     private final Map<EmitterListener<R, FlowSession>, EmitterListener<Object, FlowSession>> listeners =
-            new HashMap<>();
+            new ConcurrentHashMap<>();
 
     public AiProcessFlow(ProcessFlow<D> flow) {
         super(flow);
