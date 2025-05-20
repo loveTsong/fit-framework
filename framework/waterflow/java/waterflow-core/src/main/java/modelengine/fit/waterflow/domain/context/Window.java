@@ -75,6 +75,8 @@ public class Window implements Completable {
 
     private To node = null;
 
+    private Runnable onDoneHandler = null;
+
     public Window(Operators.WindowCondition condition, UUID id) {
         this.condition = condition;
         this.id = id;
@@ -146,6 +148,14 @@ public class Window implements Completable {
         return this.isComplete.get();
     }
 
+    public synchronized void onDone(Runnable handler) {
+        if (this.isDone()) {
+            handler.run();
+            return;
+        }
+        this.onDoneHandler = handler;
+    }
+
     /**
      * 获取顶层窗口。
      *
@@ -203,7 +213,7 @@ public class Window implements Completable {
     }
 
     @Override
-    public void complete() {
+    public synchronized void complete() {
         if (this.isComplete()) {
             return;
         }
@@ -300,9 +310,12 @@ public class Window implements Completable {
     /**
      * if this session window is closed and all elements have been consumed, then notify listener stream that i'm totally consumed
      **/
-    public void tryFinish() {
+    public synchronized void tryFinish() {
         if (this.isDone()) {
             this.completed();
+            if (this.onDoneHandler != null) {
+                this.onDoneHandler.run();
+            }
         }
     }
 
