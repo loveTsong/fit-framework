@@ -11,7 +11,9 @@ import modelengine.fit.waterflow.domain.context.FlowSession;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 流程数据发布器
@@ -23,7 +25,7 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
     /**
      * Emitter的监听器
      */
-    protected List<EmitterListener<D, FlowSession>> listeners = new ArrayList<>();
+    protected Set<EmitterListener<D, FlowSession>> listeners = new LinkedHashSet<>();
 
     /**
      * 关联的 session 信息
@@ -112,14 +114,17 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
 
     @Override
     public synchronized void register(EmitterListener<D, FlowSession> listener) {
+        if (listener == null) {
+            return;
+        }
         this.listeners.add(listener);
-
         if (this.isStart) {
             this.fire();
         }
     }
 
-    public void unregister(EmitterListener<D, FlowSession> listener) {
+    @Override
+    public synchronized void unregister(EmitterListener<D, FlowSession> listener) {
         if (listener != null) {
             this.listeners.remove(listener);
         }
