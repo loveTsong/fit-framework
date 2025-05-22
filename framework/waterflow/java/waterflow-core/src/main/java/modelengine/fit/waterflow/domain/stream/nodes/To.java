@@ -194,7 +194,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
 
     private Thread preProcessT = null;
 
-    private final Set<EmitterListener> listeners = new LinkedHashSet<>();
+    private final Map<Object, EmitterListener<O, FlowSession>> listeners = new ConcurrentHashMap<>();
 
     private final Map<Object, FlowSession> nextSessions = new ConcurrentHashMap<>();
 
@@ -761,36 +761,30 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
     @Override
     public void register(EmitterListener<O, FlowSession> listener) {
         Validation.notNull(listener, "The emitter listener should not be null.");
-        synchronized (this.listeners) {
-            this.listeners.add(listener);
-        }
+        this.listeners.put(listener, listener);
     }
 
     public void unregister(EmitterListener<O, FlowSession> listener) {
         Validation.notNull(listener, "The emitter listener should not be null.");
-        synchronized (this.listeners) {
-            this.listeners.remove(listener);
-        }
+        this.listeners.remove(listener);
     }
 
     @Override
     public void emit(O data, FlowSession session) {
-        synchronized (this.listeners) {
-            this.listeners.forEach(listener -> {
-                // 这里应该是在思考是不是应该在handle的地方统一汇聚session
-                // FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.streamId, listener, session);
-                System.out.println(String.format("[%s][To][emit] data=%s, session=%s, windowId=%s, isComplete=%s, streamId=%s, tokens=%s",
-                        Thread.currentThread().getId(), data, session.getId(), session.getWindow().id(),
-                        session.getWindow().isComplete(),
-                        this.getStreamId(), session.getWindow().debugTokens()
-                ));
-                listener.handle(data, session);
-            });
-        }
-
-        // if (session.getWindow().isComplete()) {
-        //     session.getWindow().tryFinish();
-        // }
+        this.listeners.values().forEach(listener -> {
+            // 这里应该是在思考是不是应该在handle的地方统一汇聚session
+            // FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.streamId, listener, session);
+            System.out.println(String.format(
+                    "[%s][To][emit] data=%s, session=%s, windowId=%s, isComplete=%s, streamId=%s, tokens=%s",
+                    Thread.currentThread().getId(),
+                    data,
+                    session.getId(),
+                    session.getWindow().id(),
+                    session.getWindow().isComplete(),
+                    this.getStreamId(),
+                    session.getWindow().debugTokens()));
+            listener.handle(data, session);
+        });
     }
 
     private FlowSession getNextSession(FlowSession session) {
