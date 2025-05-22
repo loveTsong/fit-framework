@@ -620,7 +620,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         context.getData().toString(),
                         context.getSession().getWindow().debugTokens()
                 ));
-                context.getSession().getWindow().onDone(() -> {
+                context.getSession().getWindow().onDone(context.getSession().getWindow().id(), () -> {
                     FlowDebug.log(String.format("[%s][feedback.sessionCompleteCallback.complete] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
                                     + ", tokens=%s",
                             Thread.currentThread().getId(),
