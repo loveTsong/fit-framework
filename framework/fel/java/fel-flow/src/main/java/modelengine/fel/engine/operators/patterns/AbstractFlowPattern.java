@@ -126,16 +126,16 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
                 ));
                 return;
             }
-            if (session.isCompleted()) {
-                System.out.println(String.format("[%s][FlowPattern.bind] unregister. data=%s, session=%s, windowId=%s, isComplete=%s",
+            session.getWindow().onDone(getOnDoneHandlerId(session), () ->  {
+                System.out.println(String.format("[%s][FlowPattern.emitter] unregister. data=%s, session=%s, windowId=%s, isComplete=%s",
                         Thread.currentThread().getId(),
                         data,
                         session.getId(),
                         session.getWindow().id(),
                         session.getWindow().isComplete()));
                 this.unregister(emitterListenerRef.get());
-            }
-            System.out.println(String.format("[%s][FlowPattern.bind] accept. data=%s, session=%s, windowId=%s, isComplete=%s",
+            });
+            System.out.println(String.format("[%s][FlowPattern.emitter] accept. data=%s, session=%s, windowId=%s, isComplete=%s",
                     Thread.currentThread().getId(),
                     data,
                     session.getId(),
@@ -150,5 +150,9 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
 
     private AiProcessFlow<I, O> getFlow() {
         return Validation.notNull(this.flowSupplier.get(), "The flow cannot be null.");
+    }
+
+    private static String getOnDoneHandlerId(FlowSession session) {
+        return "AbstractFlowPattern" + session.getWindow().id();
     }
 }
