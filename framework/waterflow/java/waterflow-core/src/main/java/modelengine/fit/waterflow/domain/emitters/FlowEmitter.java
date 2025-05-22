@@ -231,17 +231,26 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
             // 这里需要基于目标父window判断是否全部window done. 当前这个还不行，处理不了子流中存在拆分window的场景
             // 另外基于session.isCompleted()判断时，这里如何防止并发问题，比如倒数第二条数据进来，同时整个完成时，会提前完成，可能导致少一条数据。
             // 这里也不能通过数量判断，因为前面流如果有拆分window的情况，则数量无法判断。
-            if (session.getWindow().isComplete()) {
-            // if (session.isCompleted() && session.getWindow().tokenCount() == this.flowSession.getWindow().tokenCount() + 1) {
-                System.out.println(String.format("[%s][UnfixedEmitter.emit.session.isCompleted] data=%s, session=%s, windowId=%s, isComplete=%s",
+            System.out.println(String.format("[%s][AutoCompleteEmitter.emit.before] data=%s, session=%s, windowId=%s, isComplete=%s",
+                    Thread.currentThread().getId(),
+                    data,
+                    session.getId(),
+                    session.getWindow().id(),
+                    session.getWindow().isComplete()));
+            session.getWindow().onDone(getOnDoneHandlerId(session), () -> {
+                System.out.println(String.format("[%s][AutoCompleteEmitter.emit.session.isCompleted] data=%s, session=%s, windowId=%s, isComplete=%s",
                         Thread.currentThread().getId(),
                         data,
                         session.getId(),
                         session.getWindow().id(),
                         session.getWindow().isComplete()));
                 this.complete();
-            }
+            });
             this.listeners.forEach(listener -> listener.handle(data, this.flowSession));
+        }
+
+        private static String getOnDoneHandlerId(FlowSession session) {
+            return "AutoCompleteEmitter" + session.getWindow().id();
         }
     }
 }

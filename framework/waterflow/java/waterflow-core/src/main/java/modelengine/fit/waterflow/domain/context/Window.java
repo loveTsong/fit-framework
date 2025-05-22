@@ -19,7 +19,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -75,7 +77,7 @@ public class Window implements Completable {
 
     private To node = null;
 
-    private Runnable onDoneHandler = null;
+    private Map<String, Runnable> onDoneHandlers = new LinkedHashMap<>();
 
     public Window(Operators.WindowCondition condition, UUID id) {
         this.condition = condition;
@@ -148,12 +150,18 @@ public class Window implements Completable {
         return this.isComplete.get();
     }
 
-    public synchronized void onDone(Runnable handler) {
+    /**
+     * 监听窗口完成事件。
+     *
+     * @param handlerId 表示监听者的唯一标识的 {@link String}。
+     * @param handler 表示监听者接收处理的 {@link Runnable}。
+     */
+    public synchronized void onDone(String handlerId, Runnable handler) {
         if (this.isDone()) {
             handler.run();
             return;
         }
-        this.onDoneHandler = handler;
+        this.onDoneHandlers.put(handlerId, handler);
     }
 
     /**
@@ -313,9 +321,13 @@ public class Window implements Completable {
     public synchronized void tryFinish() {
         if (this.isDone()) {
             this.completed();
-            if (this.onDoneHandler != null) {
-                this.onDoneHandler.run();
-            }
+            System.out.println(String.format("[%s][Window.tryFinish.completed.after] parentWindowId=%s, sessionId=%s, windowId=%s, windowClass=%s",
+                    Thread.currentThread().getId(),
+                    this.from != null ? this.from.id() : "null",
+                    this.session.getId(),
+                    this.id(), this.getClass().getName()
+            ));
+            this.onDoneHandlers.values().forEach(Runnable::run);
         }
     }
 
