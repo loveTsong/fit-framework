@@ -81,17 +81,17 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
                 .just((input, ctx) -> ctx.setState(this.memoryId, ChatMessages.from(input)))
                 .generate(this.model)
                 .id(CHECK_POINT)
-                // .conditions()
-                // .matchTo(ChatMessage::isToolCall,
-                //         node -> node.reduce(() -> new AiMessage(StringUtils.EMPTY, new ArrayList<>()), (acc, input) -> {
-                //                     acc.toolCalls().addAll(input.toolCalls());
-                //                     return acc;
-                //                 })
-                //                 .just(this::handleTool)
-                //                 .id("call tool")
-                //                 .map((ignored, ctx) -> ctx.getState(this.memoryId))
-                //                 .to(CHECK_POINT))
-                // .others(node -> node)
+                .conditions()
+                .matchTo(ChatMessage::isToolCall,
+                        node -> node.reduce(() -> new AiMessage(StringUtils.EMPTY, new ArrayList<>()), (acc, input) -> {
+                                    acc.toolCalls().addAll(input.toolCalls());
+                                    return acc;
+                                })
+                                .just(this::handleTool)
+                                .id("call tool")
+                                .map((ignored, ctx) -> ctx.getState(this.memoryId))
+                                .to(CHECK_POINT))
+                .others(node -> node)
                 .just(input -> System.out.println(String.format("[%s][AbstractAgent] %s",
                         Thread.currentThread().getId(),
                         input.text())))
