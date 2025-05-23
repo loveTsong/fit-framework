@@ -30,7 +30,7 @@
         <!-- FEL -->
         <dependency>
             <groupId>org.fitframework.fel</groupId>
-            <artifactId>tool-service1</artifactId>
+            <artifactId>tool-service</artifactId>
         </dependency>
         <dependency>
             <groupId>org.fitframework.fel</groupId>
