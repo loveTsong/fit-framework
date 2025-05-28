@@ -6,25 +6,14 @@
 
 package modelengine.fel.engine.operators.models;
 
-import static modelengine.fitframework.util.ObjectUtils.cast;
-
 import modelengine.fel.core.chat.ChatMessage;
 import modelengine.fel.core.chat.Prompt;
-import modelengine.fel.core.chat.support.AiMessage;
-import modelengine.fel.core.chat.support.HumanMessage;
-import modelengine.fel.core.memory.Memory;
 import modelengine.fel.engine.util.StateKey;
 import modelengine.fit.waterflow.bridge.fitflow.FitBoundedEmitter;
-import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
-import modelengine.fit.waterflow.domain.stream.nodes.Retryable;
-import modelengine.fit.waterflow.domain.stream.reactive.Processor;
 import modelengine.fitframework.flowable.Publisher;
 import modelengine.fitframework.inspection.Validation;
 import modelengine.fitframework.util.ObjectUtils;
-import modelengine.fitframework.util.StringUtils;
-
-import java.util.Collections;
 
 /**
  * 流式模型发射器。
@@ -34,6 +23,9 @@ import java.util.Collections;
  */
 public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, ChatMessage> {
     private static final StreamingConsumer<ChatMessage, ChatMessage> EMPTY_CONSUMER = (acc, chunk) -> {};
+
+    private final ChatChunk chunkAcc = new ChatChunk();
+    private final StreamingConsumer<ChatMessage, ChatMessage> consumer;
 
     /**
      * 初始化 {@link LlmEmitter}。
@@ -45,18 +37,13 @@ public class LlmEmitter<O extends ChatMessage> extends FitBoundedEmitter<O, Chat
     public LlmEmitter(Publisher<O> publisher, Prompt prompt, FlowSession session) {
         super(publisher, data -> data);
         Validation.notNull(session, "The session cannot be null.");
+        this.consumer = ObjectUtils.nullIf(session.getInnerState(StateKey.STREAMING_CONSUMER), EMPTY_CONSUMER);
     }
 
     @Override
-    protected void consumeAction(O source, ChatMessage target) {
-        System.out.println(String.format("[%s][consumeAction] %s", Thread.currentThread().getId(), target.text()));
-    }
-
-    private ChatMessage getDefaultQuestion(Prompt prompt) {
-        int size = prompt.messages().size();
-        if (size == 0) {
-            return new HumanMessage(StringUtils.EMPTY);
-        }
-        return prompt.messages().get(size - 1);
+    public void emit(ChatMessage data, FlowSession trans) {
+        super.emit(data, this.flowSession);
+        this.chunkAcc.merge(data);
+        this.consumer.accept(this.chunkAcc, data);
     }
 }
