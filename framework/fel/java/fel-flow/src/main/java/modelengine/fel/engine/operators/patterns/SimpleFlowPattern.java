@@ -8,7 +8,6 @@ package modelengine.fel.engine.operators.patterns;
 
 import modelengine.fel.core.pattern.Pattern;
 import modelengine.fel.engine.util.AiFlowSession;
-import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.emitters.EmitterListener;
 import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
@@ -51,11 +50,11 @@ public class SimpleFlowPattern<I, O> implements FlowPattern<I, O> {
     }
 
     @Override
-    public O invoke(I data) {
+    public FlowEmitter<O> invoke(I data) {
         FlowSession session = AiFlowSession.require();
         this.emitter.emit(this.processor.process(data, session));
         this.emitter.complete();
-        return null;
+        return this.emitter;
     }
 
     @Override
@@ -75,10 +74,5 @@ public class SimpleFlowPattern<I, O> implements FlowPattern<I, O> {
     @Override
     public void emit(O data, FlowSession session) {
         this.emitter.emit(data, session);
-    }
-
-    @Override
-    public FlowEmitter<O> getEmitter(FlowContext<I> input) {
-        return this.emitter;
     }
 }
