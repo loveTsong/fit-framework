@@ -63,8 +63,6 @@ public abstract class FitBoundedEmitter<O, D> extends FlowEmitter<D> {
         this.publisher.subscribe(new EmitterSubscriber<>(this));
     }
 
-    protected abstract void consumeAction(O source, D target);
-
     private void doEmit(D data) {
         this.emit(data, this.flowSession);
     }
@@ -115,7 +113,6 @@ public abstract class FitBoundedEmitter<O, D> extends FlowEmitter<D> {
         public void consume(O source) {
             D target = this.emitter.dataConverter.apply(source);
             this.emitter.doEmit(target);
-            this.emitter.consumeAction(source, target);
         }
 
         @Override
