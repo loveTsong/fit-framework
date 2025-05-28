@@ -421,18 +421,30 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
      */
     public <R> AiState<R, D, O, RF, F> delegate(Pattern<O, R> pattern) {
         Validation.notNull(pattern, "Pattern operator cannot be null.");
-        FlowPattern<O, R> flowPattern = this.castFlowPattern(pattern);
+        return this.delegate(new SimpleFlowPattern<>(pattern));
+    }
+
+    /**
+     * 将数据委托给 {@link FlowPattern}{@code <}{@link O}{@code , }{@link R}{@code >}
+     * 处理，然后自身放弃处理数据。处理后的数据会发送回该节点，作为该节点的处理结果。
+     *
+     * @param pattern 表示异步委托单元的 {@link FlowPattern}{@code <}{@link O}{@code , }{@link R}{@code >}。
+     * @param <R> 表示委托节点的输出数据类型。
+     * @return 表示委托节点的 {@link AiState}{@code <}{@link R}{@code , }{@link D}{@code , }{@link O}{@code ,
+     * }{@link RF}{@code , }{@link F}{@code >}。
+     * @throws IllegalArgumentException 当 {@code pattern} 为 {@code null} 时。
+     */
+    public <R> AiState<R, D, O, RF, F> delegate(FlowPattern<O, R> pattern) {
+        Validation.notNull(pattern, "Pattern operator cannot be null.");
         Processor<O, R> orProcessor = this.publisher().flatMap(input -> {
-            FlowEmitter<R> emitter = flowPattern.getEmitter(input);
-            AiFlowSession.applyPattern(flowPattern, input.getData(), input.getSession());
-            System.out.println(String.format("[flows][source.before] streamId=%s", this.publisher().getStreamId()));
+            FlowEmitter<R> emitter = AiFlowSession.applyPattern(pattern, input.getData(), input.getSession());
             return Flows.source(emitter);
         }, null);
         this.displayPatternProcessor(pattern, orProcessor);
         return new AiState<>(new State<>(orProcessor, this.flow().origin()), this.flow());
     }
 
-    private <R> void displayPatternProcessor(Pattern<O, R> pattern, Processor<O, R> processor) {
+    private <R> void displayPatternProcessor(FlowPattern<O, R> pattern, Processor<O, R> processor) {
         if (pattern instanceof AbstractFlowPattern) {
             Flow<O> originFlow = ObjectUtils.<AbstractFlowPattern<O, R>>cast(pattern).origin();
             processor.displayAs("delegate to flow", originFlow, originFlow.start().getId());

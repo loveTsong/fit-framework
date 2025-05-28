@@ -9,7 +9,7 @@ package modelengine.fel.engine.operators.patterns;
 import modelengine.fel.engine.flows.AiProcessFlow;
 import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fit.waterflow.domain.context.FlowSession;
-import modelengine.fit.waterflow.domain.emitters.EmitterListener;
+import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
 import modelengine.fitframework.inspection.Validation;
 
 import java.util.Collections;
@@ -44,11 +44,9 @@ public class FlowNodeSupportable<I, O> extends AbstractFlowPattern<I, O> {
     }
 
     @Override
-    public O invoke(I data) {
-        // 这里理论上应该是监听主流session对应window的完成事件，完成子流的window
-        FlowSession mainSession = AiFlowSession.require();
-        FlowSession flowSession = FlowSession.newRootSession(mainSession, true);
-        flowSession.setInnerState("parentSessionId", mainSession.getId());
+    public FlowEmitter<O> invoke(I data) {
+        FlowEmitter<O> emitter = new FlowEmitter.AutoCompleteEmitter<>();
+        FlowSession flowSession =  buildFlowSession(emitter);
         System.out.println(String.format(
                 "[%s][FlowNodeSupportable.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
                 Thread.currentThread().getId(),
@@ -58,6 +56,6 @@ public class FlowNodeSupportable<I, O> extends AbstractFlowPattern<I, O> {
                 flowSession.getId(),
                 flowSession.getWindow().id()));
         this.flow.converse(flowSession).offer(this.nodeId, Collections.singletonList(data));
-        return null;
+        return emitter;
     }
 }

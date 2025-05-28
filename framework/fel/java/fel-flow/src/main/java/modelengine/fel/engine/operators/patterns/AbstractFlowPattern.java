@@ -10,7 +10,6 @@ import modelengine.fel.core.pattern.Pattern;
 import modelengine.fel.engine.flows.AiProcessFlow;
 import modelengine.fel.engine.flows.ConverseLatch;
 import modelengine.fel.engine.util.AiFlowSession;
-import modelengine.fit.waterflow.domain.context.FlowContext;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.context.Window;
 import modelengine.fit.waterflow.domain.emitters.EmitterListener;
@@ -18,8 +17,7 @@ import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
 import modelengine.fit.waterflow.domain.flow.Flow;
 import modelengine.fitframework.inspection.Validation;
 import modelengine.fitframework.util.LazyLoader;
-
-import java.util.concurrent.atomic.AtomicReference;
+import modelengine.fitframework.util.ObjectUtils;
 
 /**
  * 流程委托单元。
@@ -28,10 +26,31 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 2024-06-04
  */
 public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
+    protected static final String RESULT_ACTION_KEY = "resultAction";
+    protected static final String PARENT_SESSION_ID_KEY = "parentSessionId";
+
     private final LazyLoader<AiProcessFlow<I, O>> flowSupplier;
+    private final EmitterListener<O, FlowSession> dataDispatcher = (data, session) -> {
+        Object rawResultAction = session.getInnerState(RESULT_ACTION_KEY);
+        if (rawResultAction == null) {
+            return;
+        }
+        ResultAction<O> resultAction = ObjectUtils.cast(rawResultAction);
+        System.out.println(String.format("[%s][AbstractFlowPattern] sub flow data accept. data=%s, session=%s, windowId=%s, isComplete=%s",
+                Thread.currentThread().getId(),
+                data,
+                session.getId(),
+                session.getWindow().id(),
+                session.getWindow().isComplete()));
+        resultAction.process(data, session);
+    };
 
     protected AbstractFlowPattern() {
-        this.flowSupplier = LazyLoader.of(this::buildFlow);
+        this.flowSupplier = LazyLoader.of(() -> {
+            AiProcessFlow<I, O> flow = buildFlow();
+            flow.register(this.dataDispatcher);
+            return flow;
+        });
     }
 
     /**
@@ -58,24 +77,21 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
 
     @Override
     public void emit(O data, FlowSession session) {
-        // FlowSession flowSession = new FlowSession(session);
-        System.out.println(String.format("[%s][FlowPattern.emit] data=%s, session=%s, windowId=%s", Thread.currentThread().getId(), data, session.getId(), session.getWindow().id()));
+        System.out.println(String.format("[%s][AbstractFlowPattern.emit] data=%s, session=%s, windowId=%s", Thread.currentThread().getId(), data, session.getId(), session.getWindow().id()));
         this.getFlow().emit(data, session);
     }
 
     @Override
-    public O invoke(I data) {
-        // 这里理论上应该是监听主流session对应window的完成事件，完成子流的window
-        FlowSession mainSession = AiFlowSession.require();
-        FlowSession flowSession = FlowSession.newRootSession(mainSession, true);
-        flowSession.setInnerState("parentSessionId", mainSession.getId());
-        System.out.println(String.format("[%s][FlowPattern.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
+    public FlowEmitter<O> invoke(I data) {
+        FlowEmitter<O> emitter = new FlowEmitter.AutoCompleteEmitter<>();
+        FlowSession flowSession = buildFlowSession(emitter);
+        System.out.println(String.format("[%s][AbstractFlowPattern.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
                 Thread.currentThread().getId(), data, AiFlowSession.require().getId(), AiFlowSession.require().getWindow().id(),
                 flowSession.getId(),
                 flowSession.getWindow().id()
         ));
         this.getFlow().converse(flowSession).offer(data);
-        return null;
+        return emitter;
     }
 
     /**
@@ -109,50 +125,33 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
         return this.getFlow().origin();
     }
 
-    @Override
-    public FlowEmitter<O> getEmitter(FlowContext<I> input) {
-        FlowEmitter<O> cachedEmitter = new FlowEmitter.AutoCompleteEmitter<>();
-        AtomicReference<EmitterListener<O, FlowSession>> emitterListenerRef = new AtomicReference<>();
-        EmitterListener<O, FlowSession> emitterListener = (data, session) -> {
-            // 结束时取消注册
-            if (!input.getSession().getId().equals(session.getInnerState("parentSessionId"))) {
-                System.out.println(String.format("[%s][FlowPattern.bind] ignore. data=%s, session=%s, windowId=%s, isComplete=%s, inputSessionId=%s",
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete(),
-                        input.getSession().getId()
-                ));
-                return;
-            }
-            session.getWindow().onDone(getOnDoneHandlerId(session), () ->  {
-                System.out.println(String.format("[%s][FlowPattern.emitter] unregister. data=%s, session=%s, windowId=%s, isComplete=%s",
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete()));
-                this.unregister(emitterListenerRef.get());
-            });
-            System.out.println(String.format("[%s][FlowPattern.emitter] accept. data=%s, session=%s, windowId=%s, isComplete=%s",
-                    Thread.currentThread().getId(),
-                    data,
-                    session.getId(),
-                    session.getWindow().id(),
-                    session.getWindow().isComplete()));
-            cachedEmitter.emit(data, session);
-        };
-        emitterListenerRef.set(emitterListener);
-        this.register(emitterListener);
-        return cachedEmitter;
+    /**
+     * built the flow session for starting the conversation.
+     *
+     * @param emitter the {@link FlowEmitter}{@code <}{@link O}{@code >} representing output emitter.
+     * @return {@link FlowSession}.
+     * @param <O> the output data type.
+     */
+    protected static <O> FlowSession buildFlowSession(FlowEmitter<O> emitter) {
+        FlowSession mainSession = AiFlowSession.require();
+        FlowSession flowSession = FlowSession.newRootSession(mainSession, true);
+        flowSession.setInnerState(PARENT_SESSION_ID_KEY, mainSession.getId());
+        ResultAction<O> resultAction = emitter::emit;
+        flowSession.setInnerState(RESULT_ACTION_KEY, resultAction);
+        return flowSession;
     }
 
     private AiProcessFlow<I, O> getFlow() {
         return Validation.notNull(this.flowSupplier.get(), "The flow cannot be null.");
     }
 
-    private static String getOnDoneHandlerId(FlowSession session) {
-        return "AbstractFlowPattern" + session.getWindow().id();
+    protected interface ResultAction<O> {
+        /**
+         * process the result.
+         *
+         * @param data the result of {@link O}.
+         * @param flowSession the result flow session of {@link FlowSession}.
+         */
+        void process(O data, FlowSession flowSession);
     }
 }
