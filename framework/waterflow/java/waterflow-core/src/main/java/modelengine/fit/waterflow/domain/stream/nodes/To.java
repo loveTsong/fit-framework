@@ -848,19 +848,13 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         FlowContext<R1> clonedContext = context.generate(data, to.getId());
                         clonedContext.setSession(nextSession);
                         if (context.getSession().isAccumulator()) {
-                            int index = to.getNextAccOrder(context.getSession());
-                            System.out.println(String.format("[%s][To.MAPPING.getNextAccOrder] data=%s, index=%s",
+                            System.out.println(String.format("[%s][To.MAPPING.getNextAccOrder] data=%s, index=%s, preIndex=%s",
                                     Thread.currentThread().getId(),
                                     data,
-                                    index));
-                            // Integer index = to.counter.get(context.getSession().getId());
-                            // if (index == null) {
-                            //     index = 0;
-                            // } else {
-                            //     index++;
-                            // }
-                            // to.counter.put(context.getSession().getId(), index);
-                            clonedContext.setIndex(index);
+                                    0, clonedContext.getIndex()));
+                            if (clonedContext.getIndex() > Constants.NOT_PRESERVED_INDEX) {
+                                clonedContext.setIndex(0);
+                            }
                         }
                         //accept the consumed token, and create a new token for the handled data, meanwhile,consume the peeked
                         nextSession.getWindow().acceptToken(peekedToken);
@@ -871,6 +865,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         }
                     } else {
                         peekedToken.finishConsume();//consume the peeked
+                        if (window.isDone()) {
+                            window.tryFinish();
+                        }
                     }
                 }
                 return cs;
