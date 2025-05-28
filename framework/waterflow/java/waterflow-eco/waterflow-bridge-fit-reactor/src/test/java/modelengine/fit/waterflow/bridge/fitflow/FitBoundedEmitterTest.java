@@ -55,11 +55,6 @@ class FitBoundedEmitterTest {
         public TestEmitter(Publisher<O> publisher, Function<O, D> builder) {
             super(publisher, builder);
         }
-
-        @Override
-        protected void consumeAction(O source, D target) {
-
-        }
     }
 
     @Test
