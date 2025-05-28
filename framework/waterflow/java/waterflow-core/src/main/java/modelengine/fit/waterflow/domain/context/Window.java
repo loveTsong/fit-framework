@@ -18,13 +18,13 @@ import modelengine.fit.waterflow.domain.stream.reactive.Publisher;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -41,10 +41,12 @@ import java.util.stream.Collectors;
  */
 public class Window implements Completable {
     private final UUID id;
-
     private final List<WindowToken> tokens = new ArrayList<>(16);
+    @Getter
+    private final Set<Window> tos = new CopyOnWriteArraySet<>();
+    private final Map<String, Runnable> onDoneHandlers = new ConcurrentHashMap<>();
 
-    private final Set<Window> tos = new HashSet<>();
+    private Boolean isFinished = false;
 
     /**
      * window最后更新时间
@@ -76,8 +78,6 @@ public class Window implements Completable {
     private CompleteContext completeContext;
 
     private To node = null;
-
-    private Map<String, Runnable> onDoneHandlers = new LinkedHashMap<>();
 
     public Window(Operators.WindowCondition condition, UUID id) {
         this.condition = condition;
@@ -221,18 +221,20 @@ public class Window implements Completable {
     }
 
     @Override
-    public synchronized void complete() {
-        if (this.isComplete()) {
-            return;
+    public void complete() {
+        synchronized (this) {
+            if (this.isComplete()) {
+                return;
+            }
+            this.isComplete.set(true);
         }
-        this.isComplete.set(true);
         this.fire();
         this.tryFinish();
     }
 
     private void fire() {
         // only when all elements are consumed(done), fire the possible reduce
-        if (completeContext != null && session.isAccumulator() && this.isDone()) {
+        if (completeContext != null && (session.isAccumulator() || this.acc != null) && this.isDone()) {
             List<FlowContext<Object>> cs = new ArrayList<>();
             cs.add(completeContext);
             List contexts = node.getProcessMode().process(node, cs);
@@ -310,25 +312,28 @@ public class Window implements Completable {
         this.completeContext = new CompleteContext(context, to.getId());
     }
 
-    public <T, R> void setCompleteHook(To<T, R> to) {
-        // this.node = to;
-        // this.completeContext = new CompleteContext(context, to.getId());
-    }
-
     /**
      * if this session window is closed and all elements have been consumed, then notify listener stream that i'm totally consumed
      **/
-    public synchronized void tryFinish() {
-        if (this.isDone()) {
-            this.completed();
-            System.out.println(String.format("[%s][Window.tryFinish.completed.after] parentWindowId=%s, sessionId=%s, windowId=%s, windowClass=%s",
-                    Thread.currentThread().getId(),
-                    this.from != null ? this.from.id() : "null",
-                    this.session.getId(),
-                    this.id(), this.getClass().getName()
-            ));
-            this.onDoneHandlers.values().forEach(Runnable::run);
+    public void tryFinish() {
+        synchronized (this) {
+            if (this.isFinished) {
+                return;
+            }
+            if (!this.isDone()) {
+                return;
+            }
+            this.isFinished = true;
         }
+        this.completed();
+        System.out.println(String.format(
+                "[%s][Window.tryFinish.completed.after] parentWindowId=%s, sessionId=%s, windowId=%s, windowClass=%s",
+                Thread.currentThread().getId(),
+                this.from != null ? this.from.id() : "null",
+                this.session.getId(),
+                this.id(),
+                this.getClass().getName()));
+        this.onDoneHandlers.values().forEach(Runnable::run);
     }
 
     /**
