@@ -30,7 +30,6 @@ import modelengine.fit.waterflow.domain.stream.operators.Operators;
 import modelengine.fit.waterflow.domain.stream.reactive.Callback;
 import modelengine.fit.waterflow.domain.stream.reactive.Subscriber;
 import modelengine.fit.waterflow.domain.stream.reactive.Subscription;
-import modelengine.fit.waterflow.domain.utils.FlowDebug;
 import modelengine.fit.waterflow.domain.utils.FlowExecutors;
 import modelengine.fit.waterflow.domain.utils.IdGenerator;
 import modelengine.fit.waterflow.domain.utils.Identity;
@@ -46,7 +45,6 @@ import modelengine.fitframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -489,36 +487,10 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                 return;
             }
             List<FlowContext<O>> afterList = this.getProcessMode().process(this, preList);
-            afterList.forEach(ctx -> {
-                System.out.println(String.format("[%s][To][onProcess.after] contextId=%s->%s, index=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, streamId=%s, tokens=%s, isComplete=%s.",
-                        Thread.currentThread().getId(),
-                        ctx.getPrevious(),
-                        ctx.getId(),
-                        ctx.getIndex(),
-                        ctx.getSession().getId(), afterList.size(),
-                        ctx.getWindow().id(),
-                        ctx.getWindow().tokenCount(),
-                        this.getStreamId(),
-                        ctx.getWindow().debugTokens(),
-                        ctx.getWindow().isComplete()
-                        ));
-            });
-            preList.forEach(ctx -> {
-                if (ctx.getWindow().isDone()) {
-                    System.out.println(String.format("[%s][To][onProcess.after.preList.isDone] contextId=%s->%s, index=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, streamId=%s, tokens=%s, isComplete=%s.",
-                            Thread.currentThread().getId(),
-                            ctx.getPrevious(),
-                            ctx.getId(),
-                            ctx.getIndex(),
-                            ctx.getSession().getId(), afterList.size(),
-                            ctx.getWindow().id(),
-                            ctx.getWindow().tokenCount(),
-                            this.getStreamId(),
-                            ctx.getWindow().debugTokens(),
-                            ctx.getWindow().isComplete()
-                    ));
-                    this.processingSessions.remove(ctx.getSession().getId());
-                }
+            preList.forEach(context -> {
+                context.getWindow()
+                        .onDone(getCleanProcessingSessionHandlerId(context),
+                                () -> this.processingSessions.remove(context.getSession().getId()));
             });
             this.afterProcess(preList, afterList);
             if (CollectionUtils.isNotEmpty(afterList)) {
@@ -563,6 +535,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
         preList.forEach(context -> this.processingSessions.remove(context.getSession().getId()));
     }
 
+    private static <I> String getCleanProcessingSessionHandlerId(FlowContext<I> ctx) {
+        return "ProcessingSession" + ctx.getSession().getId();
+    }
 
     private List<FlowContext<I>> filterTerminate(List<FlowContext<I>> contexts) {
         if (CollectionUtils.isEmpty(contexts)) {
@@ -594,43 +569,9 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
 
     private void feedback(List<FlowContext<O>> contexts) {
         this.callback.process(new ToCallback<>(contexts));
-
-        contexts.forEach(context -> {
-            FlowDebug.log(String.format("[%s][feedback] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
-                            + ", tokens=%s",
-                    Thread.currentThread().getId(),
-                    this.getId()  + "|" +  this.getNodeType(),
-                    this.getStreamId(),
-                    context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
-                    context.getSession().getId(), context.getSession().getWindow().id(),
-                    context.getData().toString(),
-                    context.getSession().getWindow().debugTokens()
-            ));
-        });
-
         if (this.sessionCompleteCallback != null) {
             contexts.forEach(context -> {
-                FlowDebug.log(String.format("[%s][feedback.sessionCompleteCallback] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
-                                + ", tokens=%s",
-                        Thread.currentThread().getId(),
-                        this.getId()  + "|" + this.getNodeType(),
-                        this.getStreamId(),
-                        context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
-                        context.getSession().getId(), context.getSession().getWindow().id(),
-                        context.getData().toString(),
-                        context.getSession().getWindow().debugTokens()
-                ));
                 context.getSession().getWindow().onDone(context.getSession().getWindow().id(), () -> {
-                    FlowDebug.log(String.format("[%s][feedback.sessionCompleteCallback.complete] nodeId=%s, streamId=%s, isComplete=%s, isDone=%s, sessionId=%s, windowId=%s, data=%s"
-                                    + ", tokens=%s",
-                            Thread.currentThread().getId(),
-                            this.getId()  + "|" + this.getNodeType(),
-                            this.getStreamId(),
-                            context.getSession().getWindow().isComplete(), context.getWindow().isDone(),
-                            context.getSession().getId(), context.getSession().getWindow().id(),
-                            context.getData().toString(),
-                            context.getSession().getWindow().debugTokens()
-                    ));
                     this.sessionCompleteCallback.process(context.getSession());
                 });
             });
@@ -771,20 +712,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
 
     @Override
     public void emit(O data, FlowSession session) {
-        this.listeners.values().forEach(listener -> {
-            // 这里应该是在思考是不是应该在handle的地方统一汇聚session
-            // FlowSession nextSession = FlowSessionRepo.getNextEmitSession(this.streamId, listener, session);
-            System.out.println(String.format(
-                    "[%s][To][emit] data=%s, session=%s, windowId=%s, isComplete=%s, streamId=%s, tokens=%s",
-                    Thread.currentThread().getId(),
-                    data,
-                    session.getId(),
-                    session.getWindow().id(),
-                    session.getWindow().isComplete(),
-                    this.getStreamId(),
-                    session.getWindow().debugTokens()));
-            listener.handle(data, session);
-        });
+        this.listeners.values().forEach(listener -> listener.handle(data, session));
     }
 
     private FlowSession getNextSession(FlowSession session) {
@@ -825,18 +753,6 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                     window.setCompleteHook(to, context);
                     // get the token,and set to begin consume
                     WindowToken peekedToken = window.peekAndConsume();
-                    System.out.println(String.format("[%s][To][MAPPING.process] contextId=%s->%s, index=%s， data=%s, peekedToken=%s, sessionId=%s, contextSize=%s, windowId=%s, tokenCount=%s, isComplete=%s, tokens=%s, streamId=%s.",
-                            Thread.currentThread().getId(),
-                            context.getPrevious(), context.getId(), context.getIndex(),
-                            context.getData(),
-                            peekedToken == null ? "null" : peekedToken.hashCode(),
-                            context.getSession().getId(), contexts.size(),
-                            context.getWindow().id(),
-                            context.getWindow().tokenCount(),
-                            context.getWindow().isComplete(),
-                            context.getWindow().debugTokens(),
-                            to.getStreamId()
-                    ));
                     // process data
                     R1 data = to.map.process(context);
                     // context.getSession() could be changed by processor
@@ -848,10 +764,6 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                         FlowContext<R1> clonedContext = context.generate(data, to.getId());
                         clonedContext.setSession(nextSession);
                         if (context.getSession().isAccumulator()) {
-                            System.out.println(String.format("[%s][To.MAPPING.getNextAccOrder] data=%s, index=%s, preIndex=%s",
-                                    Thread.currentThread().getId(),
-                                    data,
-                                    0, clonedContext.getIndex()));
                             if (clonedContext.getIndex() > Constants.NOT_PRESERVED_INDEX) {
                                 clonedContext.setIndex(0);
                             }
@@ -864,7 +776,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
                             nextSession.getWindow().complete();
                         }
                     } else {
-                        peekedToken.finishConsume();//consume the peeked
+                        peekedToken.finishConsume();
                         if (window.isDone()) {
                             window.tryFinish();
                         }

@@ -8,7 +8,6 @@ package modelengine.fel.core.chat;
 
 import modelengine.fel.core.tool.ToolInfo;
 import modelengine.fel.core.model.http.SecureConfig;
-import modelengine.fitframework.inspection.Nonnull;
 import modelengine.fitframework.pattern.builder.BuilderFactory;
 
 import java.util.List;
@@ -26,7 +25,6 @@ public interface ChatOption {
      *
      * @return 表示模型名字的 {@link String}。
      */
-    @Nonnull
     String model();
 
     /**
@@ -37,7 +35,6 @@ public interface ChatOption {
      *
      * @return 表示是否使用流式接口的 {@code boolean}。
      */
-    @Nonnull
     Boolean stream();
 
     /**

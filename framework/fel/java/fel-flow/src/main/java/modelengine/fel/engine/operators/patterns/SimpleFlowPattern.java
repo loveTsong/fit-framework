@@ -59,16 +59,12 @@ public class SimpleFlowPattern<I, O> implements FlowPattern<I, O> {
 
     @Override
     public void register(EmitterListener<O, FlowSession> handler) {
-        if (handler != null) {
-            this.emitter.register(handler);
-        }
+        this.emitter.register(handler);
     }
 
     @Override
     public void unregister(EmitterListener<O, FlowSession> handler) {
-        if (handler != null) {
-            this.emitter.unregister(handler);
-        }
+        this.emitter.unregister(handler);
     }
 
     @Override

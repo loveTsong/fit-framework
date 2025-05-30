@@ -181,9 +181,7 @@ public class From<I> extends IdGenerator implements Publisher<I> {
         Operators.Map<FlowContext<I>, O> wrapper = input -> {
             FlatMapSourceWindow fWindow = FlatMapSourceWindow.from(this.streamId, input.getWindow(), this.repo);
 
-            // final FlowSession session = new FlowSession(input.getSession());
             FlatMapWindow flatMapWindow = new FlatMapWindow(fWindow);
-            // session.setWindow(flatMapWindow);
             final FlowSession session = FlowSession.from(input.getSession(), flatMapWindow);
             session.begin();
 
@@ -194,34 +192,8 @@ public class From<I> extends IdGenerator implements Publisher<I> {
             startSession.onError(exception -> {
                 processRef.get().fail(exception, Collections.singletonList(input));
             });
-            System.out.println(String.format("[%s][From.flatMap] startSessionId=%s, windowId=%s, streamId=%s, inputWindowId=%s, inputWindowTos=%s"
-                    + ", flatMapSourceWindowId=%s, flatMapSourceWindowAcc=%s, flatMapWindowId=%s"
-                    + ", sessionWindowId=%s"
-                    ,
-                    Thread.currentThread().getId(),
-                    startSession.getId(), startSession.getWindow().id(),
-                    this.getStreamId(),
-                    input.getWindow().id(),
-                    input.getWindow().getTosSize(),
-                    fWindow.id(), fWindow.acc(),
-                    flatMapWindow.id(),
-                    session.getWindow().id()
-            ));
             start.just(data -> {
-                // 这里session的window什么时候结束？
                 processRef.get().offer(data, session);
-                System.out.println(String.format("[%s][From.flatMap.start] data=%s, session=%s, windowId=%s, isComplete=%s, streamId=%s, tokens=%s"
-                        + ", acc=%s"
-                        ,
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete(),
-                        this.getStreamId(),
-                        session.getWindow().debugTokens(),
-                        session.getWindow().acc()
-                ));
             }).offer(startSession);
             return null;
         };

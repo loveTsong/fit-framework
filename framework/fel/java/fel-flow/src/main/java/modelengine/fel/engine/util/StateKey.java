@@ -41,7 +41,7 @@ public interface StateKey {
     /**
      * 表示流式模型节点处理器。
      */
-    // String STREAMING_PROCESSOR = "streaming_processor";
+    String STREAMING_PROCESSOR = "streaming_processor";
 
     /**
      * 表示流式模型节点处理器。

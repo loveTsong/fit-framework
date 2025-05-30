@@ -63,12 +63,8 @@ public class Conversation<D, R> {
     @SafeVarargs
     public final ConverseLatch<R> offer(D... data) {
         ConverseLatch<R> latch = setListener(this.flow);
-        FlowSession newSession = new FlowSession(this.session);
+        FlowSession newSession = FlowSession.newRootSession(this.session, this.session.preserved());
         newSession.getWindow().setFrom(null);
-        System.out.println(String.format("[%s][Conversation.offer] session=%s, windowId=%s, newWindowId=%s",
-                Thread.currentThread().getId(), this.session.getId(), this.session.getWindow().id(),
-                newSession.getWindow().id()
-        ));
         this.flow.start().offer(data, newSession);
         newSession.getWindow().complete();
         return latch;
@@ -87,6 +83,7 @@ public class Conversation<D, R> {
         Validation.notBlank(nodeId, "invalid nodeId.");
         ConverseLatch<R> latch = setListener(this.flow);
         FlowSession newSession = new FlowSession(this.session);
+        newSession.getWindow().setFrom(null);
         this.flow.origin().offer(nodeId, data.toArray(new Object[0]), newSession);
         newSession.getWindow().complete();
         return latch;
@@ -204,7 +201,6 @@ public class Conversation<D, R> {
 
     private ConverseLatch<R> setListener(AiProcessFlow<D, R> currFlow) {
         ConverseLatch<R> latch = new ConverseLatch<>();
-        System.out.println(String.format("[Conversation][setListener] latchId=%s", latch.getId()));
         Predictable<R> predictable = new Predictable<>(currFlow, this.callBackBuilder.build(), latch);
         ConverseListener<R> listener = this.converseListener.getAndSet(predictable);
         if (listener != null && !listener.isCompleted()) {

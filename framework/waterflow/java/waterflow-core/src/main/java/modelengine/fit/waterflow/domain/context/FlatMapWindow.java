@@ -93,10 +93,6 @@ public class FlatMapWindow extends Window {
      */
     @Override
     public void complete() {
-        System.out.println(String.format("[%s][FlatMapWindow.complete] windowId=%s, isComplete=%s",
-                Thread.currentThread().getId(),
-                this.id(),
-                this.isComplete()));
         super.complete();
         this.from.complete();
     }

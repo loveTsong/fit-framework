@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FlowSessionRepo {
     /**
-     * 按照流管理 session 相关资源的释放，其中键为流标识，元素中键为 sessionId。
+     * 按照流管理 session 相关资源的释放，其中键为流标识，元素中键为 session 的唯一标识。
      */
     private static final Map<String, Map<String, FlowSessionCache>> cache = new ConcurrentHashMap<>();
 
@@ -95,7 +95,6 @@ public class FlowSessionRepo {
      * @param session 需要释放资源的 session。
      */
     public static void release(String flowId, FlowSession session) {
-        System.out.println(String.format("[Session][release] flowId=%s, session=%s", flowId, session.getId()));
         Validation.notNull(flowId, "Flow id cannot be null.");
         Validation.notNull(session, "Session cannot be null.");
         cache.compute(flowId, (__, value) -> {
@@ -114,19 +113,9 @@ public class FlowSessionRepo {
         return cache.compute(flowId, (__, value) -> {
             Map<String, FlowSessionCache> sessionCacheMap = value;
             if (sessionCacheMap == null) {
-                System.out.println(String.format("[%s][Session] new flow cache flowId=%s, session=%s",
-                        Thread.currentThread().getId(),
-                        flowId,
-                        session.getId()));
                 sessionCacheMap = new ConcurrentHashMap<>();
             }
-            sessionCacheMap.computeIfAbsent(session.getId(), id -> {
-                System.out.println(String.format("[%s][Session] new session cache flowId=%s, session=%s",
-                        Thread.currentThread().getId(),
-                        flowId,
-                        session.getId()));
-                return new FlowSessionCache();
-            });
+            sessionCacheMap.computeIfAbsent(session.getId(), id -> new FlowSessionCache());
             return sessionCacheMap;
         }).get(session.getId());
     }
@@ -178,7 +167,7 @@ public class FlowSessionRepo {
 
         private FlowSession getNextEmitterHandleSession(FlowSession session) {
             return this.nextEmitterHandleSessions.computeIfAbsent(session.getWindow().key(), __ -> {
-                FlowSession next = new FlowSession();
+                FlowSession next = FlowSession.newRootSession(session, session.preserved());
                 Window nextWindow = next.begin();
                 // if the processor is not reduce, then inherit previous window condition
                 if (!session.isAccumulator()) {

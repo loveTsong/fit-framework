@@ -13,7 +13,7 @@ import java.util.Arrays;
 import static modelengine.fitframework.util.ObjectUtils.nullIf;
 
 /**
- * 功能描述
+ * 操作上下文。
  *
  * @author 梁济时
  * @since 2023-10-30

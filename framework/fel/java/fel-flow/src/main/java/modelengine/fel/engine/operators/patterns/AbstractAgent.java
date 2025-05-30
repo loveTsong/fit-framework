@@ -9,6 +9,7 @@ package modelengine.fel.engine.operators.patterns;
 import static modelengine.fitframework.inspection.Validation.notBlank;
 import static modelengine.fitframework.inspection.Validation.notNull;
 
+import lombok.Getter;
 import modelengine.fel.core.chat.ChatMessage;
 import modelengine.fel.core.chat.Prompt;
 import modelengine.fel.core.chat.support.AiMessage;
@@ -33,10 +34,7 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     private static final String AGENT_MEMORY = "agent_memory";
     private static final String CHECK_POINT = "check_point";
 
-    public ChatFlowModel getModel() {
-        return model;
-    }
-
+    @Getter
     private final ChatFlowModel model;
     private final String memoryId;
 
@@ -76,8 +74,8 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     protected abstract Prompt doToolCall(List<ToolCall> toolCalls, StateContext ctx);
 
     @Override
-    public AiProcessFlow<Prompt, ChatMessage> buildFlow() {
-        AiProcessFlow<Prompt, ChatMessage> agent = AiFlows.<Prompt>create()
+    protected AiProcessFlow<Prompt, ChatMessage> buildFlow() {
+        return AiFlows.<Prompt>create()
                 .just((input, ctx) -> ctx.setState(this.memoryId, ChatMessages.from(input)))
                 .generate(this.model)
                 .id(CHECK_POINT)
@@ -92,12 +90,7 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
                                 .map((ignored, ctx) -> ctx.getState(this.memoryId))
                                 .to(CHECK_POINT))
                 .others(node -> node)
-                .just(input -> System.out.println(String.format("[%s][AbstractAgent] %s",
-                        Thread.currentThread().getId(),
-                        input.text())))
                 .close();
-        System.out.println(String.format("[buildFlow] id=%s, streamId=%s", agent.getId(), agent.start().getStreamId()));
-        return agent;
     }
 
     private void handleTool(ChatMessage message, StateContext ctx) {

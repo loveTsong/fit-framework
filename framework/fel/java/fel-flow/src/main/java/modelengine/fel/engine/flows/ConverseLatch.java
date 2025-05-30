@@ -8,8 +8,6 @@ package modelengine.fel.engine.flows;
 
 import modelengine.fitframework.log.Logger;
 
-import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,17 +24,10 @@ public class ConverseLatch<T> {
     private Throwable throwable = null;
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    public UUID getId() {
-        return id;
-    }
-
-    private UUID id = UUID.randomUUID();
-
     /**
      * 触发 {@link CountDownLatch#countDown()} 尝试唤醒阻塞线程。
      */
     public void countDown() {
-        System.out.println(String.format("[ConverseLatch][countDown] %s", id));
         this.countDownLatch.countDown();
     }
 
@@ -50,7 +41,6 @@ public class ConverseLatch<T> {
      */
     public T await(long timeout, TimeUnit unit) {
         try {
-            System.out.println(String.format("[ConverseLatch][await(timeout)] %s", id));
             if (!this.countDownLatch.await(timeout, unit)) {
                 throw new IllegalStateException("conversation timeout");
             }
@@ -72,7 +62,6 @@ public class ConverseLatch<T> {
      */
     public T await() {
         try {
-            System.out.println(String.format("[ConverseLatch][await()] %s", id));
             this.countDownLatch.await();
         } catch (InterruptedException exception) {
             throw new IllegalStateException(exception.getMessage(), exception);

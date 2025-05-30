@@ -26,8 +26,8 @@ import modelengine.fitframework.util.ObjectUtils;
  * @since 2024-06-04
  */
 public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
-    protected static final String RESULT_ACTION_KEY = "resultAction";
-    protected static final String PARENT_SESSION_ID_KEY = "parentSessionId";
+    private static final String RESULT_ACTION_KEY = "resultAction";
+    private static final String PARENT_SESSION_ID_KEY = "parentSessionId";
 
     private final LazyLoader<AiProcessFlow<I, O>> flowSupplier;
     private final EmitterListener<O, FlowSession> dataDispatcher = (data, session) -> {
@@ -36,12 +36,6 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
             return;
         }
         ResultAction<O> resultAction = ObjectUtils.cast(rawResultAction);
-        System.out.println(String.format("[%s][AbstractFlowPattern] sub flow data accept. data=%s, session=%s, windowId=%s, isComplete=%s",
-                Thread.currentThread().getId(),
-                data,
-                session.getId(),
-                session.getWindow().id(),
-                session.getWindow().isComplete()));
         resultAction.process(data, session);
     };
 
@@ -62,22 +56,16 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
 
     @Override
     public void register(EmitterListener<O, FlowSession> handler) {
-        System.out.println("[FlowPattern.register] " + this.getFlow().start().getStreamId());
-        if (handler != null) {
-            this.getFlow().register(handler);
-        }
+        this.getFlow().register(handler);
     }
 
     @Override
     public void unregister(EmitterListener<O, FlowSession> listener) {
-        if (listener != null) {
-            this.getFlow().unregister(listener);
-        }
+        this.getFlow().unregister(listener);
     }
 
     @Override
     public void emit(O data, FlowSession session) {
-        System.out.println(String.format("[%s][AbstractFlowPattern.emit] data=%s, session=%s, windowId=%s", Thread.currentThread().getId(), data, session.getId(), session.getWindow().id()));
         this.getFlow().emit(data, session);
     }
 
@@ -85,11 +73,6 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
     public FlowEmitter<O> invoke(I data) {
         FlowEmitter<O> emitter = new FlowEmitter.AutoCompleteEmitter<>();
         FlowSession flowSession = buildFlowSession(emitter);
-        System.out.println(String.format("[%s][AbstractFlowPattern.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
-                Thread.currentThread().getId(), data, AiFlowSession.require().getId(), AiFlowSession.require().getWindow().id(),
-                flowSession.getId(),
-                flowSession.getWindow().id()
-        ));
         this.getFlow().converse(flowSession).offer(data);
         return emitter;
     }
@@ -102,17 +85,13 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
      */
     public Pattern<I, O> sync() {
         return new SimplePattern<>(data -> {
-            System.out.println("sync");
             FlowSession require = AiFlowSession.require();
             FlowSession session = new FlowSession(true);
             Window window = session.begin();
             session.copySessionState(require);
             ConverseLatch<O> conversation = this.getFlow().converse(session).offer(data);
             window.complete();
-            System.out.println(String.format("sync offer end. latch=%s", conversation.getId()));
-            O await = conversation.await();
-            System.out.println("sync offer wait end");
-            return await;
+            return conversation.await();
         });
     }
 

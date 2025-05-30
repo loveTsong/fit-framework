@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 大模型流式响应内容片段。
@@ -29,8 +28,6 @@ import java.util.Optional;
  * @since 2024-05-16
  */
 public class ChatChunk implements ChatMessage {
-    private boolean isEnd = false;
-    private Throwable throwable = null;
     private final StringBuilder text = new StringBuilder();
     private final List<ToolCall> toolCalls = new ArrayList<>();
 
@@ -48,15 +45,6 @@ public class ChatChunk implements ChatMessage {
     }
 
     /**
-     * 使用异常句柄初始化 {@link ChatChunk}。
-     *
-     * @param throwable 表示异常句柄的 {@link Throwable}。
-     */
-    public ChatChunk(Throwable throwable) {
-        this.throwable = Validation.notNull(throwable, "Throwable cannot be null.");
-    }
-
-    /**
      * 聚合流式响应内容片段。
      *
      * @param message 表示大模型流式响应内容片段的 {@link ChatMessage}。
@@ -64,16 +52,6 @@ public class ChatChunk implements ChatMessage {
     public void merge(ChatMessage message) {
         Validation.notNull(message, "Chat message can not be null.");
         this.merge(message.text(), message.toolCalls());
-    }
-
-    /**
-     * 设置流式片段结束标记。
-     *
-     * @return 表示大模型流式响应内容片段的 {@link ChatChunk}。
-     */
-    public ChatChunk setEnd() {
-        this.isEnd = true;
-        return this;
     }
 
     @Override

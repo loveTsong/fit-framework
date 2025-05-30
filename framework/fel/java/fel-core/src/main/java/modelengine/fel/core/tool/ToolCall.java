@@ -21,7 +21,6 @@ public interface ToolCall {
      *
      * @return 表示工具调用唯一编号的 {@link String}。
      */
-    @Nonnull
     String id();
 
     /**
@@ -36,7 +35,6 @@ public interface ToolCall {
      *
      * @return 表示工具名称的 {@link String}。
      */
-    @Nonnull
     String name();
 
     /**
@@ -44,7 +42,6 @@ public interface ToolCall {
      *
      * @return 表示工具调用参数的 {@link String}。
      */
-    @Nonnull
     String arguments();
 
     /**

@@ -561,7 +561,6 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
     public <M extends ChatMessage> AiState<ChatMessage, D, O, RF, F> generate(FlowModel<O, M> model) {
         Validation.notNull(model, "Streaming Model operator cannot be null.");
         Processor<O, ChatMessage> processor = this.publisher().flatMap(input -> {
-            System.out.println("generate");
             return Flows.source(AiFlowSession.applyPattern(model, input.getData(), input.getSession()));
         }, null).displayAs("generate");
         return new AiState<>(new State<>(processor, this.flow().origin()), this.flow());
@@ -593,7 +592,6 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
         }
 
         AiState<Tip, D, Tip, RF, F> state = aiFork.join(Tip::new, (acc, data) -> {
-            System.out.println(String.format("[%s][runnableParallel] acc=%s, input=%s", Thread.currentThread().getId(), acc, data));
             acc.merge(data);
             return acc;
         });
@@ -603,10 +601,6 @@ public class AiStart<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
 
     private Processor<O, Tip> getPatternProcessor(Pattern<O, Tip> pattern, AiState<O, D, O, RF, F> node) {
         return node.publisher()
-                .map(input -> {
-                    Tip tip = AiFlowSession.applyPattern(pattern, input.getData(), input.getSession());
-                    System.out.println(String.format("[%s][getPatternProcessor.tip] tip=%s", Thread.currentThread().getId(), tip));
-                    return tip;
-                    }, null);
+                .map(input -> AiFlowSession.applyPattern(pattern, input.getData(), input.getSession()), null);
     }
 }
