@@ -211,10 +211,10 @@ public class State<O, D, I, F extends Flow<D>> extends Start<O, D, I, F>
                     "[close] " + this.getFlow().end().getStreamId() + ":" + "end. data:" + input.get().getData());
             callback.process(input);
             input.get().getWindow().peekAndConsume().finishConsume();
-            if (input.get().getWindow().isDone()) {
+            input.get().getWindow().onDone(this.getFlow().end().getId(), () -> {
                 FlowSessionRepo.release(this.processor.getStreamId(), input.get().getSession());
                 this.getFlow().completeSession(input.get().getSession().getId());
-            }
+            });
         });
         if (sessionComplete != null) {
             getFlow().end().onSessionComplete(session -> {
