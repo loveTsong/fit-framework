@@ -18,7 +18,7 @@ import modelengine.fitframework.log.Logger;
 public class FlowDebug {
     private static final Logger LOG = Logger.get(FlowDebug.class);
 
-    private static boolean isOpen = true;
+    private static boolean isOpen = false;
 
     /**
      * 打印日志信息，包含线程ID和消息内容
@@ -29,8 +29,7 @@ public class FlowDebug {
         if (!isOpen) {
             return;
         }
-//        LOG.debug("Thread:{0}. {1}", Thread.currentThread().getId(), msg);
-        System.out.println(String.format("Thread:%s. %s", Thread.currentThread().getId(), msg));
+       LOG.debug("Thread:{0}. {1}", Thread.currentThread().getId(), msg);
     }
 
     /**
@@ -43,17 +42,8 @@ public class FlowDebug {
         if (!isOpen) {
             return;
         }
-//        LOG.debug("Thread:{0}. tokenCount:{1}, getTosSize={2}, isComplete={3}. msg={4}", Thread.currentThread().getId(),
-//                session.getWindow().tokenCount(), session.getWindow().getTosSize(), session.getWindow().isComplete(),
-//                msg);
-        System.out.println(String.format("Thread:%s %s, sessionId=%s, windowId=%s, windowToken=%s, TokenStatus=%s, isComplete=%s",
-                Thread.currentThread().getId(),
-                msg,
-                session.getId() + "|" + session.hashCode(),
-                session.getWindow().id(),
-                session.getWindow().tokenCount(),
-                session.getWindow().debugTokens(),
-                session.getWindow().isComplete()
-                ));
+       LOG.debug("Thread:{0}. tokenCount:{1}, getTosSize={2}, isComplete={3}. msg={4}", Thread.currentThread().getId(),
+               session.getWindow().tokenCount(), session.getWindow().getTosSize(), session.getWindow().isComplete(),
+               msg);
     }
 }

@@ -47,8 +47,7 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
     /**
      * 构造空数据的发射器，具体数据由用户自己投递。
      */
-    public FlowEmitter() {
-    }
+    public FlowEmitter() {}
 
     /**
      * 构造单个数据的Emitter
@@ -99,16 +98,7 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
      */
     public static <I> FlowEmitter<I> from(Emitter<I, FlowSession> emitter) {
         FlowEmitter<I> cachedEmitter = new AutoCompleteEmitter<>();
-        EmitterListener<I, FlowSession> emitterListener = (data, session) -> {
-            System.out.println(String.format("[%s][FlowEmitter.from] data=%s, session=%s, windowId=%s, isComplete=%s",
-                    Thread.currentThread().getId(),
-                    data,
-                    session.getId(),
-                    session.getWindow().id(),
-                    session.getWindow().isComplete()));
-            cachedEmitter.emit(data, session);
-        };
-        emitter.register(emitterListener);
+        emitter.register(cachedEmitter::emit);
         return cachedEmitter;
     }
 
@@ -211,9 +201,11 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
     }
 
     /**
-     * 基于发射器自适应完成的发射器实现。
+     * An emitter implementation that automatically completes based on emission conditions.
+     * This emitter subclass handles automatic completion logic when certain emission
+     * criteria are met, reducing the need for manual completion management.
      *
-     * @param <D> 发射器处理的数据类型。
+     * @param <D> the type of data processed by this emitter.
      */
     public static class AutoCompleteEmitter<D> extends FlowEmitter<D> {
         @Override
@@ -228,24 +220,7 @@ public class FlowEmitter<D> implements Emitter<D, FlowSession> {
 
         @Override
         public synchronized void emit(D data, FlowSession session) {
-            // 这里需要基于目标父window判断是否全部window done. 当前这个还不行，处理不了子流中存在拆分window的场景
-            // 另外基于session.isCompleted()判断时，这里如何防止并发问题，比如倒数第二条数据进来，同时整个完成时，会提前完成，可能导致少一条数据。
-            // 这里也不能通过数量判断，因为前面流如果有拆分window的情况，则数量无法判断。
-            System.out.println(String.format("[%s][AutoCompleteEmitter.emit.before] data=%s, session=%s, windowId=%s, isComplete=%s",
-                    Thread.currentThread().getId(),
-                    data,
-                    session.getId(),
-                    session.getWindow().id(),
-                    session.getWindow().isComplete()));
-            session.getWindow().onDone(getOnDoneHandlerId(session), () -> {
-                System.out.println(String.format("[%s][AutoCompleteEmitter.emit.session.isCompleted] data=%s, session=%s, windowId=%s, isComplete=%s",
-                        Thread.currentThread().getId(),
-                        data,
-                        session.getId(),
-                        session.getWindow().id(),
-                        session.getWindow().isComplete()));
-                this.complete();
-            });
+            session.getWindow().onDone(getOnDoneHandlerId(session), this::complete);
             this.listeners.forEach(listener -> listener.handle(data, this.flowSession));
         }
 

@@ -47,7 +47,7 @@ public class ModelTest {
         if (chatOption.stream()) {
             for (int i = 0; i < 4; i++) {
                 emitter.emit(new AiMessage(String.valueOf(i)));
-                SleepUtil.sleep(1);
+                SleepUtil.sleep(10);
             }
         } else {
             emitter.emit(new AiMessage(String.valueOf(0)));
@@ -120,9 +120,7 @@ public class ModelTest {
             StringBuffer sb = new StringBuffer();
             AtomicInteger cnt = new AtomicInteger(0);
             this.boundStreamFlow.converse()
-                    .doOnConsume(str -> {
-                        sb.append(str);
-                    })
+                    .doOnConsume(sb::append)
                     .doOnFinally(cnt::getAndIncrement)
                     .offer(Tip.fromArray("test streaming model"))
                     .await();
@@ -171,48 +169,6 @@ public class ModelTest {
 
             assertThatThrownBy(() -> exceptionConverse.offer(Tip.fromArray("test streaming exception"))
                     .await()).isInstanceOf(IllegalStateException.class).message().isEqualTo(expectedMsg);
-        }
-
-        @Test
-        void testxx() {
-            TestAgent testAgent = new TestAgent(model);
-
-            // AiProcessFlow<Prompt, ChatMessage> agentFlow = testAgent.buildFlow();
-            // ChatMessage await = agentFlow.converse().offer(new ChatMessages()).await();
-            // System.out.println("xxxxxxxxxx-agentFlow end-xxxxxx:" + await.text());
-
-            AiProcessFlow<Tip, String> agent = AiFlows.<Tip>create()
-                    .prompt(Prompts.human("answer: {{0}}"))
-                    .generate(model)
-                    .reduce(() -> "", (acc, input) -> acc + "-" + input.text())
-                    .close();
-            AiProcessFlow<Tip, String> mainFlow = AiFlows.<Tip>create()
-                    .prompt(Prompts.human("answer: {{0}}"))
-                    .delegate(testAgent)
-                    .just(chunk -> System.out.println(String.format("[%s][just] %s", Thread.currentThread().getId(), chunk.text())))
-                    .reduce(() -> "", (acc, input) -> {
-                        System.out.println(String.format("[%s][reduce] input=%s, acc=%s", Thread.currentThread().getId(), input.text(), acc));
-                        return acc + "-" + input.text();}
-                    )
-                    .close();
-            System.out.println(String.format("[testxx] mainFlowId=%s, streamId=%s", mainFlow.getId(), mainFlow.start().getStreamId()));
-
-            for (int i = 0; i < 3; ++i) {
-                String testStreamingModel = mainFlow.converse().offer(Tip.fromArray("test streaming model")).await();
-                System.out.println(i + "|xxxxxxxxxx-end-xxxxxx:" + testStreamingModel);
-                SleepUtil.sleep(1000);
-            }
-        }
-
-        public class TestAgent extends AbstractAgent {
-            protected TestAgent(ChatFlowModel flowModel) {
-                super(flowModel);
-            }
-
-            @Override
-            protected Prompt doToolCall(List<ToolCall> toolCalls, StateContext ctx) {
-                return null;
-            }
         }
     }
 }

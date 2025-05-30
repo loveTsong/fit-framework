@@ -40,14 +40,6 @@ import java.util.stream.Collectors;
  * @since 1.0
  */
 public class Window implements Completable {
-    private final UUID id;
-    private final List<WindowToken> tokens = new ArrayList<>(16);
-    @Getter
-    private final Set<Window> tos = new CopyOnWriteArraySet<>();
-    private final Map<String, Runnable> onDoneHandlers = new ConcurrentHashMap<>();
-
-    private Boolean isFinished = false;
-
     /**
      * window最后更新时间
      */
@@ -64,6 +56,13 @@ public class Window implements Completable {
     @Getter
     protected Window from = null;
 
+    private final UUID id;
+    private final List<WindowToken> tokens = new ArrayList<>(16);
+    @Getter
+    private final Set<Window> tos = new CopyOnWriteArraySet<>();
+    private final Map<String, Runnable> onDoneHandlers = new ConcurrentHashMap<>();
+
+    private Boolean isFinished = false;
     /**
      * accumulator for reduce
      */
@@ -157,11 +156,13 @@ public class Window implements Completable {
      * @param handler 表示监听者接收处理的 {@link Runnable}。
      */
     public synchronized void onDone(String handlerId, Runnable handler) {
-        if (this.isDone()) {
-            handler.run();
-            return;
+        synchronized (this) {
+            if (!this.isDone()) {
+                this.onDoneHandlers.put(handlerId, handler);
+                return;
+            }
         }
-        this.onDoneHandlers.put(handlerId, handler);
+        handler.run();
     }
 
     /**
@@ -326,13 +327,6 @@ public class Window implements Completable {
             this.isFinished = true;
         }
         this.completed();
-        System.out.println(String.format(
-                "[%s][Window.tryFinish.completed.after] parentWindowId=%s, sessionId=%s, windowId=%s, windowClass=%s",
-                Thread.currentThread().getId(),
-                this.from != null ? this.from.id() : "null",
-                this.session.getId(),
-                this.id(),
-                this.getClass().getName()));
         this.onDoneHandlers.values().forEach(Runnable::run);
     }
 

@@ -22,6 +22,7 @@
         <dependency>
             <groupId>org.fitframework.fel</groupId>
             <artifactId>fel-core</artifactId>
+            <version>${fel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.fitframework.fel</groupId>

@@ -65,10 +65,10 @@ public class FlatMapSourceWindow extends Window {
     /**
      * 根据输入的原始窗口和上下文仓库创建或获取一个 FlatMapSourceWindow 实例。
      *
-     * @param <I> 输入类型
+     * @param <I> 输入类型。
      * @param flowId 流标识。
-     * @param window 原始窗口
-     * @param repo 上下文仓库
+     * @param window 原始窗口。
+     * @param repo 上下文仓库。
      * @return FlatMapSourceWindow 实例
      */
     public static <I> FlatMapSourceWindow from(String flowId, Window window, FlowContextRepo repo) {
@@ -200,21 +200,11 @@ public class FlatMapSourceWindow extends Window {
      */
     @Override
     public void complete() {
-        System.out.println(String.format("[%s][FlatMapSourceWindow.complete.before] windowId=%s, isComplete=%s, sessionId=%s",
-                Thread.currentThread().getId(),
-                this.id(),
-                this.isComplete(), this.getSession().getId()
-        ));
         if (this.from.isDone() && this.indexSlots.values().size() == this.from.tokenCount()
                 && this.indexSlots.values().stream().allMatch(UnconfirmedIndexSlot::isDone)) {
             if (this.getSession().preserved()) {
                 preserveIndexes();
             }
-            System.out.println(String.format("[%s][FlatMapSourceWindow.complete] windowId=%s, isComplete=%s, sessionId=%s",
-                    Thread.currentThread().getId(),
-                    this.id(),
-                    this.isComplete(), this.getSession().getId()
-            ));
             super.complete();
         }
     }

@@ -1,8 +1,8 @@
 fel:
   openai:
-    api-base: 'https://api.siliconflow.cn/v1'
-    api-key: 'sk-jujmjfaevrwyxtsyyrvpwlkwrbwwoxrjsdfpjcokwobflxqy'
+    api-base: '${api-base}'
+    api-key: '${your-api-key}'
 example:
   model:
-    chat: 'Qwen/Qwen2.5-72B-Instruct'
-    embed: 'BAAI/bge-large-zh-v1.5'
+    chat: '${model-name}'
+    embed: '${model-name}'

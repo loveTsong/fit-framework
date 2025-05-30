@@ -55,11 +55,11 @@
         <waterflow.version>3.5.0-SNAPSHOT</waterflow.version>
 
         <!-- Third-party versions -->
-        <lombok.version>1.18.26</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <bytebuddy.version>1.17.5</bytebuddy.version>
         <jackson.version>2.18.2</jackson.version>
         <hanlp.version>portable-1.8.4</hanlp.version>
-        <h2.version>2.2.224</h2.version>
+        <h2.version>2.2.232</h2.version>
 
         <!-- Test framework versions -->
         <assertj.version>3.27.3</assertj.version>

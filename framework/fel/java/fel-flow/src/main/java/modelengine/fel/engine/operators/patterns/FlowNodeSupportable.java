@@ -7,7 +7,6 @@
 package modelengine.fel.engine.operators.patterns;
 
 import modelengine.fel.engine.flows.AiProcessFlow;
-import modelengine.fel.engine.util.AiFlowSession;
 import modelengine.fit.waterflow.domain.context.FlowSession;
 import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
 import modelengine.fitframework.inspection.Validation;
@@ -47,14 +46,6 @@ public class FlowNodeSupportable<I, O> extends AbstractFlowPattern<I, O> {
     public FlowEmitter<O> invoke(I data) {
         FlowEmitter<O> emitter = new FlowEmitter.AutoCompleteEmitter<>();
         FlowSession flowSession =  buildFlowSession(emitter);
-        System.out.println(String.format(
-                "[%s][FlowNodeSupportable.invoke] data=%s, session=%s, windowId=%s, newSessionId=%s, newWindowId=%s",
-                Thread.currentThread().getId(),
-                data,
-                AiFlowSession.require().getId(),
-                AiFlowSession.require().getWindow().id(),
-                flowSession.getId(),
-                flowSession.getWindow().id()));
         this.flow.converse(flowSession).offer(this.nodeId, Collections.singletonList(data));
         return emitter;
     }

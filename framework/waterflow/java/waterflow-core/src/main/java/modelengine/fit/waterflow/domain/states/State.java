@@ -81,9 +81,7 @@ public class State<O, D, I, F extends Flow<D>> extends Start<O, D, I, F>
     }
 
     public void unregister(EmitterListener<O, FlowSession> listener) {
-        if (listener != null) {
-            this.processor.unregister(listener);
-        }
+        this.processor.unregister(listener);
     }
 
     @Override

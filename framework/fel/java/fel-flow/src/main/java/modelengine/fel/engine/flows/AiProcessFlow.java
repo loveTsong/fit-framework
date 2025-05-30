@@ -44,9 +44,8 @@ public class AiProcessFlow<D, R> extends AiFlow<D, ProcessFlow<D>>
     @Override
     public void register(EmitterListener<R, FlowSession> listener) {
         if (listener != null) {
-            // this.origin().register((data, token) -> listener.handle(ObjectUtils.cast(data), new FlowSession(token)));
             EmitterListener<Object, FlowSession> wrapperHandler =
-                    (data, token) -> listener.handle(ObjectUtils.cast(data), token);
+                    (data, session) -> listener.handle(ObjectUtils.cast(data), session);
             this.listeners.put(listener, wrapperHandler);
             this.origin().register(wrapperHandler);
         }

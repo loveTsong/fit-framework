@@ -73,9 +73,6 @@ public class PatternTest {
 
         converse.doOnConsume(r -> answer.append(r.text())).offer("question").await();
         assertThat(answer.toString()).isEqualTo("answer question from context with my history");
-        System.out.println("xxxxxx===sleep before");
-        SleepUtil.sleep(3000);
-        System.out.println("xxxxxx===sleep after");
 
         // 验证 runnableParallel 中 join 初始值重新获取，不影响后续的请求。
         StringBuilder answer1 = new StringBuilder();
@@ -149,10 +146,10 @@ public class PatternTest {
         String value = "value";
         session.setState(key, value);
         SimplePattern<Prompt, String> pattern = new SimplePattern<>(prompt -> {
-            String sessionId = AiFlowSession.get()
+            String inputContextValue = AiFlowSession.get()
                     .map(target -> ObjectUtils.<String>cast(target.getState(key)))
                     .orElse(StringUtils.EMPTY);
-            return prompt.text() + sessionId;
+            return prompt.text() + inputContextValue;
         });
         Window token = session.begin();
         ConverseLatch<String> offer = AiFlows.<Tip>create()

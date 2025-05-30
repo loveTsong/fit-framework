@@ -110,7 +110,6 @@ public final class Flows {
      */
     public static <D> DataStart<D, D, D> source(Emitter<D, FlowSession> emitter) {
         Start<D, D, D, ProcessFlow<D>> start = Flows.create();
-        System.out.println(String.format("[flows][source] streamId=%s", start.getFlow().start.getStreamId()));
         return new DataStart<>(start, emitter);
     }
 }

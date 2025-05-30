@@ -63,12 +63,8 @@ public class Conversation<D, R> {
     @SafeVarargs
     public final ConverseLatch<R> offer(D... data) {
         ConverseLatch<R> latch = setListener(this.flow);
-        FlowSession newSession = new FlowSession(this.session);
+        FlowSession newSession = FlowSession.newRootSession(this.session, this.session.preserved());
         newSession.getWindow().setFrom(null);
-        System.out.println(String.format("[%s][Conversation.offer] session=%s, windowId=%s, newWindowId=%s",
-                Thread.currentThread().getId(), this.session.getId(), this.session.getWindow().id(),
-                newSession.getWindow().id()
-        ));
         this.flow.start().offer(data, newSession);
         newSession.getWindow().complete();
         return latch;
@@ -87,34 +83,11 @@ public class Conversation<D, R> {
         Validation.notBlank(nodeId, "invalid nodeId.");
         ConverseLatch<R> latch = setListener(this.flow);
         FlowSession newSession = new FlowSession(this.session);
+        newSession.getWindow().setFrom(null);
         this.flow.origin().offer(nodeId, data.toArray(new Object[0]), newSession);
         newSession.getWindow().complete();
         return latch;
     }
-
-    /**
-     * 当前会话订阅一个发射源，由发射源驱动会话执行，会话结束后会注销本次订阅。
-     * <p>注意发射源的 {@link Source#emit(Object, FlowSession)} 传入的 {@link FlowSession} 的状态数据，会被当前会话的各类
-     * {@code bind} 方法覆盖， 如 {@link Conversation#bind(String, Object)}、 {@link Conversation#bind(Memory)} 等。</p>
-     *
-     * @param source 表示发射源的 {@link Source}{@code <}{@link D}{@code >}。
-     * @return 表示线程同步器的 {@link ConverseLatch}{@code <}{@link R}{@code >}。
-     * @throws IllegalArgumentException 当 {@code source} 为 {@code null} 时。
-     */
-    // public ConverseLatch<R> offer(Source<D> source) {
-    //     Validation.notNull(source, "Source can not be null.");
-    //
-    //     FlowSession sessionClone = new FlowSession(this.session);
-    //     AiProcessFlow<D, R> processFlow = AiFlows.<D>create().just((data, ctx) -> {
-    //         FlowContext<D> flowContext = ObjectUtils.cast(ctx);
-    //         flowContext.getSession().copySessionState(sessionClone);
-    //     }).delegate(this.flow).close();
-    //     processFlow.offer(source);
-    //
-    //     Action finallyCb = this.callBackBuilder.getFinallyCb();
-    //     this.callBackBuilder.doOnFinally(finallyCb.andThen(() -> source.unregister(processFlow)));
-    //     return setListener(processFlow);
-    // }
 
     /**
      * 绑定大模型超参数到对话上下文，用于流程后续的大模型节点。
@@ -228,7 +201,6 @@ public class Conversation<D, R> {
 
     private ConverseLatch<R> setListener(AiProcessFlow<D, R> currFlow) {
         ConverseLatch<R> latch = new ConverseLatch<>();
-        System.out.println(String.format("[Conversation][setListener] latchId=%s", latch.getId()));
         Predictable<R> predictable = new Predictable<>(currFlow, this.callBackBuilder.build(), latch);
         ConverseListener<R> listener = this.converseListener.getAndSet(predictable);
         if (listener != null && !listener.isCompleted()) {

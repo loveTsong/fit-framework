@@ -19,5 +19,4 @@ import modelengine.fit.waterflow.domain.emitters.FlowEmitter;
  * @author 刘信宏
  * @since 2024-04-22
  */
-public interface FlowPattern<I, O> extends Pattern<I,FlowEmitter<O>>, Emitter<O, FlowSession> {
-}
+public interface FlowPattern<I, O> extends Pattern<I,FlowEmitter<O>>, Emitter<O, FlowSession> {}
