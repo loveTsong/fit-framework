@@ -46,8 +46,7 @@ public class OpenAiChatCompletionResponse {
      * @return 表示模型回复的 {@link ChatMessage}。
      */
     public ChatMessage reasoningContent() {
-        // 目前认为生成reasoning content不会生成tool call
-        return extractMessage(OpenAiChatMessage::reasoningContent, m -> null);
+        return extractMessage(OpenAiChatMessage::reasoningContent, OpenAiChatMessage::toolCalls);
     }
 
     private ChatMessage extractMessage(
