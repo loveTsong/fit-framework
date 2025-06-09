@@ -180,11 +180,18 @@ public final class Entities {
     }
 
     /**
-     * equals
+     * Compares two maps for equality, handling null cases and checking both keys and values.
+     * Two maps are considered equal if they are both null, or if they:
+     * 1. Have the same size.
+     * 2. Contain the same keys.
+     * 3. Have equal values for each key (using {@link Objects#equals}).
      *
-     * @param map1 map1
-     * @param map2 map2
-     * @return boolean
+     * @param <K> The type of keys maintained by the maps.
+     * @param <V> The type of mapped values。
+     * @param map1 The first map to compare (may be null).
+     * @param map2 The second map to compare (may be null).
+     * @return {@code true} If the maps are equal according to the specified criteria,
+     *         {@code false} otherwise.
      */
     public static <K, V> boolean equals(Map<K, V> map1, Map<K, V> map2) {
         if (map1 == null) {
@@ -204,11 +211,20 @@ public final class Entities {
     }
 
     /**
-     * equals
+     * Compares two lists for equality, handling null cases and checking elements regardless of order.
+     * Two lists are considered equal if they are both null, or if they:
+     * 1. Have the same size.
+     * 2. Contain the same elements (using set comparison).
+     * Note: This implementation considers [1,2,2] and [1,1,2] as equal due to set conversion.
      *
-     * @param list1 list1
-     * @param list2 list2
-     * @return boolean
+     * @param <T> The type of elements in the lists.
+     * @param list1 The first list to compare (may be null).
+     * @param list2 The second list to compare (may be null).
+     * @return {@code true} If the lists contain the same elements regardless of order,
+     *         {@code false} otherwise.
+     * @apiNote This method performs a set-based comparison, which means it doesn't preserve
+     *          element ordering or duplicate counts. For strict list equality that considers
+     *          order and duplicates, use {@link List#equals}.
      */
     public static <T> boolean equals(List<T> list1, List<T> list2) {
         if (list1 == null) {
@@ -227,41 +243,45 @@ public final class Entities {
     }
 
     /**
-     * 表示创建人和创建时间可跟踪的对象。
+     * Represents an object that can track its creator and creation time.
+     * Implementing classes should maintain audit information about when and by whom
+     * the object was initially created.
      */
     public interface CreationTraceable {
         /**
-         * setCreator
+         * Sets the creator identifier for this object.
          *
-         * @param creator creator
+         * @param creator The username or identifier of the creator.
          */
         void setCreator(String creator);
 
         /**
-         * setCreationTime
+         * Sets the creation timestamp for this object.
          *
-         * @param creationTime creationTime
+         * @param creationTime The date and time when the object was created.
          */
         void setCreationTime(LocalDateTime creationTime);
     }
 
     /**
-     * ModificationTraceable
+     * Represents an object that can track its last modifier and modification time.
+     * Implementing classes should maintain audit information about when and by whom
+     * the object was last modified.
      *
      * @since 2023-09-15
      */
     public interface ModificationTraceable {
         /**
-         * setLastModifier
+         * Sets the last modifier identifier for this object.
          *
-         * @param lastModifier lastModifier
+         * @param lastModifier The username or identifier of the last modifier.
          */
         void setLastModifier(String lastModifier);
 
         /**
-         * setLastModificationTime
+         * Sets the last modification timestamp for this object.
          *
-         * @param lastModificationTime lastModificationTime
+         * @param lastModificationTime The date and time when the object was last modified.
          */
         void setLastModificationTime(LocalDateTime lastModificationTime);
     }

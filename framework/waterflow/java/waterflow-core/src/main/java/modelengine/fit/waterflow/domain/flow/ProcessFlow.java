@@ -43,6 +43,7 @@ public class ProcessFlow<D> extends Flow<D> implements EmitterListener<D, FlowSe
         this.end.register(handler);
     }
 
+    @Override
     public void unregister(EmitterListener<Object, FlowSession> handler) {
         if (handler != null) {
             this.end.unregister(handler);

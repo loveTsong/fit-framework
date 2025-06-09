@@ -105,11 +105,11 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
     }
 
     /**
-     * built the flow session for starting the conversation.
+     * Built the flow session for starting the conversation.
      *
-     * @param emitter the {@link FlowEmitter}{@code <}{@link O}{@code >} representing output emitter.
-     * @return {@link FlowSession}.
-     * @param <O> the output data type.
+     * @param emitter The {@link FlowEmitter}{@code <}{@link O}{@code >} representing output emitter.
+     * @return The new {@link FlowSession}.
+     * @param <O> The output data type.
      */
     protected static <O> FlowSession buildFlowSession(FlowEmitter<O> emitter) {
         FlowSession mainSession = AiFlowSession.require();
@@ -124,12 +124,18 @@ public abstract class AbstractFlowPattern<I, O> implements FlowPattern<I, O> {
         return Validation.notNull(this.flowSupplier.get(), "The flow cannot be null.");
     }
 
+    /**
+     * A functional interface defining an action to be performed with processed results.
+     * Implementations handle both the result data and its associated flow session context.
+     *
+     * @param <O> The type of result data to be processed.
+     */
     protected interface ResultAction<O> {
         /**
-         * process the result.
+         * Process the result.
          *
-         * @param data the result of {@link O}.
-         * @param flowSession the result flow session of {@link FlowSession}.
+         * @param data The result of {@link O}.
+         * @param flowSession The result flow session of {@link FlowSession}.
          */
         void process(O data, FlowSession flowSession);
     }

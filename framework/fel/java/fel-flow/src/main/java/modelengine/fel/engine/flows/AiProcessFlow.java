@@ -51,6 +51,7 @@ public class AiProcessFlow<D, R> extends AiFlow<D, ProcessFlow<D>>
         }
     }
 
+    @Override
     public void unregister(EmitterListener<R, FlowSession> listener) {
         EmitterListener<Object, FlowSession> target = this.listeners.remove(listener);
         if (target != null) {

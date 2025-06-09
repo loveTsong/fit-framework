@@ -123,9 +123,9 @@ public class FlatMapWindow extends Window {
     }
 
     /**
-     * set source window.
+     * Set source window.
      *
-     * @param source the source window of {@link Window}.
+     * @param source The source window of {@link Window}.
      */
     public void setSource(Window source) {
         this.source = source;

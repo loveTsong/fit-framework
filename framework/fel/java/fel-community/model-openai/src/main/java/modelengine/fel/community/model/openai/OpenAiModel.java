@@ -60,7 +60,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -166,7 +165,7 @@ public class OpenAiModel implements EmbedModel, ChatModel, ImageModel {
                     .map(entity -> entity.object().media())
                     .orElseThrow(() -> new FitException("The response body is abnormal."));
         } catch (IOException e) {
-            throw new FitException(e);
+            throw new IllegalStateException("Failed to close response.", e);
         }
     }
 

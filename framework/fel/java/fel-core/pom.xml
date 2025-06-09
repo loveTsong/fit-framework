@@ -56,12 +56,6 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        
-        <!-- Third-party -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

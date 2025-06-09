@@ -705,6 +705,7 @@ public class To<I, O> extends IdGenerator implements Subscriber<I, O> {
         this.listeners.put(listener, listener);
     }
 
+    @Override
     public void unregister(EmitterListener<O, FlowSession> listener) {
         Validation.notNull(listener, "The emitter listener should not be null.");
         this.listeners.remove(listener);

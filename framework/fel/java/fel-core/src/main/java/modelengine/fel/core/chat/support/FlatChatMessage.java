@@ -6,8 +6,6 @@
 
 package modelengine.fel.core.chat.support;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import modelengine.fel.core.chat.ChatMessage;
 import modelengine.fel.core.chat.MessageType;
 import modelengine.fel.core.tool.ToolCall;
@@ -26,8 +24,6 @@ import java.util.Optional;
  * @author 易文渊
  * @since 2024-04-12
  */
-@Data
-@NoArgsConstructor
 public class FlatChatMessage implements ChatMessage {
     private String id;
     private String type;

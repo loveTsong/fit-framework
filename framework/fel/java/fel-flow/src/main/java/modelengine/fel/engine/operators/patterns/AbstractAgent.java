@@ -34,7 +34,6 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     private static final String AGENT_MEMORY = "agent_memory";
     private static final String CHECK_POINT = "check_point";
 
-    @Getter
     private final ChatFlowModel model;
     private final String memoryId;
 
@@ -62,6 +61,15 @@ public abstract class AbstractAgent extends AbstractFlowPattern<Prompt, ChatMess
     protected AbstractAgent(ChatFlowModel flowModel, String memoryId) {
         this.model = notNull(flowModel, "The flow model cannot be null.");
         this.memoryId = notBlank(memoryId, "The agent message key cannot be blank.");
+    }
+
+    /**
+     * 获取配置的模型对象。
+     *
+     * @return 配置的模型对象。
+     */
+    public ChatFlowModel getModel() {
+        return model;
     }
 
     /**

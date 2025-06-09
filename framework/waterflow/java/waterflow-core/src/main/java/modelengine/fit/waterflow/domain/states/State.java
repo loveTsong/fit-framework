@@ -76,10 +76,12 @@ public class State<O, D, I, F extends Flow<D>> extends Start<O, D, I, F>
      *
      * @param handler 表示监听器的 {@link EmitterListener}{@code <}{@link O}{@code ,}{@link FlowSession}{@code >}。
      */
+    @Override
     public void register(EmitterListener<O, FlowSession> handler) {
         this.processor.register(handler);
     }
 
+    @Override
     public void unregister(EmitterListener<O, FlowSession> listener) {
         this.processor.unregister(listener);
     }

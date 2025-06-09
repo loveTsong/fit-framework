@@ -92,8 +92,7 @@ public class RerankDocumentProcessor implements DocumentPostProcessor {
                     .map(ObjectEntity::object)
                     .orElseThrow(() -> new FitException("The response body is abnormal.")));
         } catch (IOException e) {
-            log.error("Failed to request rerank model.", e);
-            throw new FitException(e);
+            throw new IllegalStateException("Failed to request rerank model.", e);
         }
     }
 }

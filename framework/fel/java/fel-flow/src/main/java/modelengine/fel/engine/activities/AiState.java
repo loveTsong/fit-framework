@@ -106,6 +106,7 @@ public class AiState<O, D, I, RF extends Flow<D>, F extends AiFlow<D, RF>> exten
         this.state.register(handler);
     }
 
+    @Override
     public void unregister(EmitterListener<O, FlowSession> listener) {
         this.state.unregister(listener);
     }
