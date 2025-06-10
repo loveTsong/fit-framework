@@ -182,9 +182,11 @@ public final class Entities {
     /**
      * Compares two maps for equality, handling null cases and checking both keys and values.
      * <p>Two maps are considered equal if they are both null, or if they:</p>
-     * <p>1. Have the same size.</p>
-     * <p>2. Contain the same keys.</p>
-     * <p>3. Have equal values for each key (using {@link Objects#equals}).</p>
+     * <ol>
+     *     <li>Have the same size.</li>
+     *     <li>Contain the same keys.</li>
+     *     <li>Have equal values for each key (using {@link Objects#equals}).</li>
+     * </ol>
      *
      * @param <K> The type of keys maintained by the maps.
      * @param <V> The type of mapped values。
@@ -213,8 +215,10 @@ public final class Entities {
     /**
      * Compares two lists for equality, handling null cases and checking elements regardless of order.
      * <p>Two lists are considered equal if they are both null, or if they:</p>
-     * <p>1. Have the same size.</p>
-     * <p>2. Contain the same elements (using set comparison).</p>
+     * <ol>
+     *     <li>Have the same size.</li>
+     *     <li>Contain the same elements (using set comparison).</li>
+     * </ol>
      * <p>Note: This implementation considers [1,2,2] and [1,1,2] as equal due to set conversion.</p>
      *
      * @param <T> The type of elements in the lists.
