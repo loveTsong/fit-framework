@@ -43,6 +43,7 @@ public enum ErrorCodes {
     /**
      * 分页查询时Offset范围不正确。
      */
+
     PAGINATION_OFFSET_INVALID(10000008, "The range of offset is incorrect."),
     /**
      * 分页查询时Limit范围不正确。
@@ -93,6 +94,10 @@ public enum ErrorCodes {
      * 流程启动失败。
      */
     FLOW_START_ERROR(10007011, "Flow status is invalid"),
+
+    /**
+     * 执行任务失败。
+     */
     FLOW_EXECUTE_FITABLE_TASK_FAILED(10007012,
             "execute jober failed, jober name: {0}, jober type: {1}, fitables: {2}, errors: {3}"),
 
