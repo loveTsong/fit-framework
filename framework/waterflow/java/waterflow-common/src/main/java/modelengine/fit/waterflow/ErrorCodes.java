@@ -43,8 +43,8 @@ public enum ErrorCodes {
     /**
      * 分页查询时Offset范围不正确。
      */
-
     PAGINATION_OFFSET_INVALID(10000008, "The range of offset is incorrect."),
+
     /**
      * 分页查询时Limit范围不正确。
      */
